@@ -25,17 +25,19 @@ rvm use 2.0.0
 INDIR=SAM_processed
 CUFFLINKS=Cufflinks_assemblies
 CUFFCOMPARE=Cuffcompare
-PEAKCALLING=Peak_call
+#PEAKCALLING=Peak_call
+LOGDIR=logs
 REFERENCE=reference/CAC.gff
+REFFASTA=reference/CAC.txt
 FILES=`/usr/bin/ls $INDIR/*.3.bam`
 for f in $FILES
 do
-	mkdir $CUFFLINKS/${f%.*.*} $CUFFCOMPARE/${f%.*.*} $PEAKCALLING/${f%.*.*}
+	mkdir $CUFFLINKS/${f%.*.*} $CUFFCOMPARE/${f##*/} $PEAKCALLING/${f##*/}
 	# First, this script uses cufflinks to produce a reference guided transcriptome assembly
 	# Cufflinks produces a transcripts.gtf which contains the new assembly
 	# It produces a isoforms.fpkm_tracking, a estimated isoform expression values in FPKM Tracking Format
 	# Finally, it produces a genes.fpkm_tracking, a etimated gene expression values in FPKM Tracking Format
-	cufflinks -o $CUFFLINKS/${f%.*.*} -p 2 -g $REFERENCE --3-overhang-tolerance 50 $f
+	cufflinks -o $CUFFLINKS/${f##*/} -p 2 -g $REFERENCE --3-overhang-tolerance 50 $f
 	# Second, it runs cuffcompare to compare the new assembly to the reference assembly.
 	# This produces a .stats file that describes the sensitivity and specificity for detecting nucleotide, exons, introns, transcripts genes
 	# It also produces a .combined.gtf which is mostly pointless here.
@@ -43,10 +45,11 @@ do
 	# It produces a .refmap file which also labels the transcripts as novel or not
 	# It produces a .tmap file which lists retains the novel/partial/full transcript match (to the refrence)
 	#    and lists the closest matching reference transcript, the coverage, expression (FPKM), confidence intervals for the FPKM, and length of the resulting transcript
-	cuffcompare -r $REFERENCE -o $CUFFCOMPARE/${f%.*.*} $CUFFLINKS/${f%.*.*}/transcripts.gtf
-	for 
+	cuffcompare -r $REFERENCE -o $CUFFCOMPARE/${f##*/} $CUFFLINKS/${f##*/}/transcripts.gtf
 done
 
+find $CUFFLINKS/ -name 'transcripts.gtf' > assemblies.txt
+cuffmerge -o $CUFFLINKS -g $REFERENCE -p 2 -s $REFFASTA assemblies.txt
 
 
 
