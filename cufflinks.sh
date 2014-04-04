@@ -2,8 +2,8 @@
 #PBS -N assembly
 #PBS -r n
 #PBS -V
-#PBS -l nodes=1:ppn=2
-#PBS -l walltime=40:00:00,cput=80:00:00
+#PBS -l nodes=1:ppn=6
+#PBS -l walltime=120:00:00
 #PBS -d /home/mrals/test
 
 . ~/.bash_profile
@@ -22,6 +22,8 @@ rvm use 2.0.0
 # These reads are then passed to MACS for its model to evaluate the coverage near the transcription start site.
 # This is mostly to just check the transcriptome assembly, showing a significant increase in signal near the transcription start site, indicative of multiple
 # unique reads mapping near the start site.
+
+CORES=6
 INDIR=SAM_processed
 CUFFLINKS=Cufflinks_assemblies
 CUFFCOMPARE=Cuffcompare
@@ -32,12 +34,13 @@ REFFASTA=reference/CAC.txt
 FILES=`/usr/bin/ls $INDIR/*.3.bam`
 for f in $FILES
 do
-	mkdir $CUFFLINKS/${f%.*.*} $CUFFCOMPARE/${f##*/} $PEAKCALLING/${f##*/}
+        f=${f##*/};f=${f%*.*.*}
+	mkdir $CUFFLINKS/$f $CUFFCOMPARE/$f
 	# First, this script uses cufflinks to produce a reference guided transcriptome assembly
 	# Cufflinks produces a transcripts.gtf which contains the new assembly
 	# It produces a isoforms.fpkm_tracking, a estimated isoform expression values in FPKM Tracking Format
 	# Finally, it produces a genes.fpkm_tracking, a etimated gene expression values in FPKM Tracking Format
-	cufflinks -o $CUFFLINKS/${f##*/} -p 2 -g $REFERENCE --3-overhang-tolerance 50 $f
+	cufflinks -o $CUFFLINKS/${f} -p $CORES -g $REFERENCE --3-overhang-tolerance 50 $INDIR/$f.3.bam
 	# Second, it runs cuffcompare to compare the new assembly to the reference assembly.
 	# This produces a .stats file that describes the sensitivity and specificity for detecting nucleotide, exons, introns, transcripts genes
 	# It also produces a .combined.gtf which is mostly pointless here.
@@ -45,11 +48,11 @@ do
 	# It produces a .refmap file which also labels the transcripts as novel or not
 	# It produces a .tmap file which lists retains the novel/partial/full transcript match (to the refrence)
 	#    and lists the closest matching reference transcript, the coverage, expression (FPKM), confidence intervals for the FPKM, and length of the resulting transcript
-	cuffcompare -r $REFERENCE -o $CUFFCOMPARE/${f##*/} $CUFFLINKS/${f##*/}/transcripts.gtf
+	cuffcompare -r $REFERENCE -o $CUFFCOMPARE/${f} $CUFFLINKS/${f}/transcripts.gtf
 done
 
 find $CUFFLINKS/ -name 'transcripts.gtf' > assemblies.txt
-cuffmerge -o $CUFFLINKS -g $REFERENCE -p 2 -s $REFFASTA assemblies.txt
+cuffmerge -o $CUFFLINKS -g $REFERENCE -p $CORES -s $REFFASTA assemblies.txt
 
 
 
