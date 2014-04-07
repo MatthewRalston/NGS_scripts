@@ -55,12 +55,9 @@ done
 find $CUFFLINKS/ -name 'transcripts.gtf' > assemblies.txt
 cuffmerge -o $CUFFLINKS -g $REFERENCE -p $CORES -s $REFFASTA assemblies.txt
 
-for $f in $FILES
-do
-    f=${f##*/};f=${f%*.*.*}
-    samtools sort -on $INDIR/$f.3.bam | samtools view -h - | htseq-count -s no - $CUFFLINKS/merged.gtf > $EXPRDIR/$f.counts
-done
 
 
+
+parallel -j $CORES samtools sort -on {} | samtools view -h - | htseq-count -s no - $CUFFLINKS/merged.gtf > $EXPRDIR/{/.}.counts ::: $FILES
 
 ## EOF-------------------------------------------
