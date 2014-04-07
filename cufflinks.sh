@@ -41,7 +41,7 @@ do
 	# Cufflinks produces a transcripts.gtf which contains the new assembly
 	# It produces a isoforms.fpkm_tracking, a estimated isoform expression values in FPKM Tracking Format
 	# Finally, it produces a genes.fpkm_tracking, a etimated gene expression values in FPKM Tracking Format
-	cufflinks -o $CUFFLINKS/${f} -p $CORES -g $REFERENCE --3-overhang-tolerance 50 $INDIR/$f.3.bam
+	cufflinks -o $CUFFLINKS/${f} -p $CORES -g $REFERENCE $INDIR/$f.3.bam
 	# Second, it runs cuffcompare to compare the new assembly to the reference assembly.
 	# This produces a .stats file that describes the sensitivity and specificity for detecting nucleotide, exons, introns, transcripts genes
 	# It also produces a .combined.gtf which is mostly pointless here.
@@ -54,8 +54,6 @@ done
 
 find $CUFFLINKS/ -name 'transcripts.gtf' > assemblies.txt
 cuffmerge -o $CUFFLINKS -g $REFERENCE -p $CORES -s $REFFASTA assemblies.txt
-
-
 
 
 parallel -j $CORES samtools sort -on {} | samtools view -h - | htseq-count -s no - $CUFFLINKS/merged.gtf > $EXPRDIR/{/.}.counts ::: $FILES
