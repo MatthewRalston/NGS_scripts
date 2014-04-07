@@ -31,6 +31,7 @@ CUFFCOMPARE=Cuffcompare
 LOGDIR=logs
 REFERENCE=reference/CAC.gff
 REFFASTA=reference/CAC.txt
+EXPRDIR=counts
 FILES=`/usr/bin/ls $INDIR/*.3.bam`
 for f in $FILES
 do
@@ -53,6 +54,12 @@ done
 
 find $CUFFLINKS/ -name 'transcripts.gtf' > assemblies.txt
 cuffmerge -o $CUFFLINKS -g $REFERENCE -p $CORES -s $REFFASTA assemblies.txt
+
+for $f in $FILES
+do
+    f=${f##*/};f=${f%*.*.*}
+    samtools sort -on $INDIR/$f.3.bam | samtools view -h - | htseq-count -s no - $CUFFLINKS/merged.gtf > $EXPRDIR/$f.counts
+done
 
 
 
