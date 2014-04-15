@@ -21,7 +21,7 @@ OUTDIR=processed_fastq
 mkdir $OUTDIR/processed $OUTDIR/qc
 QC=$OUTDIR/qc
 OUTPUT=$OUTDIR/processed
-FILES=`/usr/bin/ls $INDIR`
+FILES=(`/usr/bin/ls $INDIR`)
 # PHRED encoding/offset of input files (33 sanger etc.)
 PHRED=33
 #########################
@@ -41,15 +41,19 @@ q100=20
 
 
 
-for file in $FILES
+for ((i=0;i<${#FILES[@]};i+=2))
 do
-	zcat $INDIR/$file | #sed '/^$/d' |
-	cutadapt -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCACCGATGTATCTCGTATG -a GATCGGAAGAGCACACGTCTGAACTCCAGTCACCGATGTATCTCGTATGC -f fastq /dev/stdin |
-	fastx_artifacts_filter -Q $PHRED -v | sickle se -t sanger -q $q -l $min -f /dev/stdin -o /dev/stdout | head -n -4 | fastq_quality_filter -Q $PHRED -q $q100 -p 100 -z > $OUTPUT/$file
-	mkdir $QC/${file%.*.*}
-	fastqc -j /usr/bin/java -f fastq -o $QC/${file%.*.*} $OUTPUT/$file
-	zcat $OUTPUT/$file | fastx_quality_stats -Q $PHRED > $QC/${file%.*.*}/fastx_report.txt
-	zcat $OUTPUT/$file | prinseq -fastq stdin -stats_all > $QC/${file%.*.*}/prinseq_stats.txt
+	gunzip $INDIR/$FILES[$i]; gunzip $INDIR/$FILES[$i+1]
+        sickle pe -t sanger -q $q -l $min -f $INDIR/${FILES[$i]%.*} -r $INDIR/${FILES[$i+1]%.*} -o $OUTPUT/${FILES[$i]%.*} -p $OUTPUT/${FILES[$i+1]%.*}
+	#fastq_quality_filter -Q $PHRED -q $q100 -p 100 -z > $OUTPUT/$file
+	gzip $INDIR/${FILES[$i]%.*}; gzip $INDIR/${FILES[$i+1]%.*}; gzip $OUTPUT/${FILES[$i]%.*}; gzip $OUTPUT/${FILES[$i+1]%.*}
+	mkdir $QC/${FILES[$i]%_*} 
+	fastqc -j /usr/bin/java -f fastq -o $QC/${FILES[$i]%_*} $OUTPUT/${FILES[$i]%.*}
+	fastqc -j /usr/bin/java -f fastq -o $QC/${FILES[$i+1]%_*} $OUTPUT/${FILES[$i+1]%.*}
+	zcat $OUTPUT/${FILES[$i]} | fastx_quality_stats -Q $PHRED > $QC/${FILES[$i]%_*}/${FILES[$i]%.*}.fastx
+	zcat $OUTPUT/${FILES[$i]} | prinseq -fastq stdin -stats_all > $QC/${FILES[$i]%_*}/${FILES[$i]%.*}.prinseq
+	zcat $OUTPUT/${FILES[$i+1]} | fastx_quality_stats -Q $PHRED > $QC/${FILES[$i+1]%_*}/${FILES[$i+1]%.*}.fastx
+	zcat $OUTPUT/${FILES[$i+1]} | prinseq -fastq stdin -stats_all > $QC/${FILES[$i+1]%_*}/${FILES[$i+1]%.*}.prinseq
 done
 
 

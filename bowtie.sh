@@ -16,7 +16,7 @@ export PATH
 [[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm"
 rvm use 2.0.0
 CORES=4
-INDIR=processed_fastq/processed/
+INDIR=rawdata
 OUTDIR=SAM_unprocessed
 FINALFASTQ=final/finalfastq
 FINALQC=final/finalqc
@@ -33,13 +33,13 @@ FILES=(`/usr/bin/ls $INDIR`)
 
 for ((i=0;i<${#FILES[@]}; i+=2))
 do
-	mkdir $FINALQC/${${FILES[i]}%_*} $FINALFASTQ/${${FILES[i]}%_*} tmp/${${FILES[i]}%_*}
-	bowtie2 -p 4 --very-sensitive -x $rRNA --un-gz $FINALFASTQ/${${FILES[$i]}%_*} -1 $INDIR/${FILES[$i]} -2 $INDIR/${FILES[$i+1]} -S /dev/null
+	mkdir $FINALQC/${FILES[$i]%_*} $FINALFASTQ/${FILES[$i]%_*} tmp/${FILES[$i]%_*}
+	bowtie2 -p 4 --fr --very-sensitive -x $rRNA --un-gz $FINALFASTQ/${FILES[$i]%_*} -1 $INDIR/${FILES[$i]} -2 $INDIR/${FILES[$i+1]} -S /dev/null
 	#bowtie2 -p 4 -N 1 --very-sensitive -x $REFERENCE --un-gz tmp/${${FILES[$i]}%_*} -U $FINALFASTQ/$f -S /dev/stdout | samtools view -bhS - > $OUTDIR/${f%.*.*}$SUFFIX
 	
-	fastqc -j /usr/bin/java -f fastq -o $FINALQC/${f%.*.*} $FINALFASTQ/$f
-	zcat $FINALFASTQ/$f | fastx_quality_stats -Q $PHRED > $FINALQC/${f%.*.*}/fastx_report.txt
-	zcat $FINALFASTQ/$f | prinseq -fastq stdin -stats_all > $FINALQC/${f%.*.*}/prinseq_stats.txt
+	#fastqc -j /usr/bin/java -f fastq -o $FINALQC/${FILES[$i]%_*} $FINALFASTQ/${}
+	#zcat $FINALFASTQ/$f | fastx_quality_stats -Q $PHRED > $FINALQC/${f%.*.*}/fastx_report.txt
+	#zcat $FINALFASTQ/$f | prinseq -fastq stdin -stats_all > $FINALQC/${f%.*.*}/prinseq_stats.txt
 done
 
 #qsub postprocess.sh
