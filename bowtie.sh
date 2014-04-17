@@ -16,7 +16,7 @@ export PATH
 [[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm"
 rvm use 2.0.0
 CORES=4
-INDIR=rawdata
+INDIR=processed_fastq/processed
 OUTDIR=SAM_unprocessed
 FINALFASTQ=final/finalfastq
 FINALQC=final/finalqc
@@ -37,7 +37,8 @@ do
 	bowtie2 -p 4 --fr --very-sensitive -x $rRNA --un-gz $FINALFASTQ/${FILES[$i]%_*} -1 $INDIR/${FILES[$i]} -2 $INDIR/${FILES[$i+1]} -S /dev/null
 	#bowtie2 -p 4 -N 1 --very-sensitive -x $REFERENCE --un-gz tmp/${${FILES[$i]}%_*} -U $FINALFASTQ/$f -S /dev/stdout | samtools view -bhS - > $OUTDIR/${f%.*.*}$SUFFIX
 	
-	#fastqc -j /usr/bin/java -f fastq -o $FINALQC/${FILES[$i]%_*} $FINALFASTQ/${}
+	fastqc -j /usr/bin/java -f fastq -o $FINALQC/${FILES[$i]%_*} $FINALFASTQ/${FILES[$i]}
+	fastqc -j /usr/bin/java -f fastq -o $FINALQC/${FILES[$i+1]%_*} $FINALFASTQ/${FILES[$i+1]}
 	#zcat $FINALFASTQ/$f | fastx_quality_stats -Q $PHRED > $FINALQC/${f%.*.*}/fastx_report.txt
 	#zcat $FINALFASTQ/$f | prinseq -fastq stdin -stats_all > $FINALQC/${f%.*.*}/prinseq_stats.txt
 done

@@ -43,10 +43,12 @@ q100=20
 
 for ((i=0;i<${#FILES[@]};i+=2))
 do
-	gunzip $INDIR/$FILES[$i]; gunzip $INDIR/$FILES[$i+1]
-        sickle pe -t sanger -q $q -l $min -f $INDIR/${FILES[$i]%.*} -r $INDIR/${FILES[$i+1]%.*} -o $OUTPUT/${FILES[$i]%.*} -p $OUTPUT/${FILES[$i+1]%.*}
+        #gunzip $INDIR/${FILES[$i]}; gunzip $INDIR/${FILES[$i+1]}
+	cutadapt -a ACACTCTTTCCCTACACGACGCTCTTCCGATCT $INDIR/${FILES[$i]} > $INDIR/${FILES[$i]%.*}.clipped
+	cutadapt -a GTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT $INDIR/${FILES[$i+1]} > $INDIR/${FILES[$i+1]%.*}.clipped
+        sickle pe -t sanger -q $q -l $min -f $INDIR/${FILES[$i]%.*}.clipped -r $INDIR/${FILES[$i+1]%.*}.clipped -o $OUTPUT/${FILES[$i]%.*} -p $OUTPUT/${FILES[$i+1]%.*}
 	#fastq_quality_filter -Q $PHRED -q $q100 -p 100 -z > $OUTPUT/$file
-	gzip $INDIR/${FILES[$i]%.*}; gzip $INDIR/${FILES[$i+1]%.*}; gzip $OUTPUT/${FILES[$i]%.*}; gzip $OUTPUT/${FILES[$i+1]%.*}
+	gzip $INDIR/${FILES[$i]%.*}.clipped; gzip $INDIR/${FILES[$i+1]%.*}.clipped; gzip $OUTPUT/${FILES[$i]%.*}; gzip $OUTPUT/${FILES[$i+1]%.*}
 	mkdir $QC/${FILES[$i]%_*} 
 	fastqc -j /usr/bin/java -f fastq -o $QC/${FILES[$i]%_*} $OUTPUT/${FILES[$i]%.*}
 	fastqc -j /usr/bin/java -f fastq -o $QC/${FILES[$i+1]%_*} $OUTPUT/${FILES[$i+1]%.*}
