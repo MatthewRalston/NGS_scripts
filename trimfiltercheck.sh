@@ -48,7 +48,7 @@ do
 
         #sickle pe -t sanger -q $q -l $min -f $INDIR/${FILES[$i]%.*}.clipped -r $INDIR/${FILES[$i+1]%.*}.clipped -o $OUTPUT/${FILES[$i]%.*} -p $OUTPUT/${FILES[$i+1]%.*}
 
-	java -jar /home/mrals/pckges/Trimmomatic-0.32/trimmomatic-0.32.jar PE -threads 2 --phred33 -trimlog logs/${FILES%_*}.trimmomatic.log $INDIR/${FILES[$i]} $INDIR/${FILES[$i+1]} $OUTPUT/${FILES[$i]} /dev/null $OUTPUT/${FILES[$i+1]}.clipped /dev/null ILLUMINACLIP:/home/mrals/pckges/trimmomatic-0.32/adapters/ScriptSeq.fa:1:29:14 LEADING:20 TRAILING:15 SLIDINGWINDOW:4:20 MINLENGTH:30
+	java -jar /home/mrals/pckges/Trimmomatic-0.32/trimmomatic-0.32.jar PE -threads 2 -phred33 -trimlog logs/${FILES%_*}.trimmomatic.log $INDIR/${FILES[$i]} $INDIR/${FILES[$i+1]} $OUTPUT/${FILES[$i]} /dev/null $OUTPUT/${FILES[$i+1]}.clipped /dev/null ILLUMINACLIP:/home/mrals/pckges/Trimmomatic-0.32/adapters/ScriptSeq.fa:1:29:14 LEADING:20 TRAILING:15 SLIDINGWINDOW:4:20 MINLENGTH:30
 
 	#cutadapt -a ACACTCTTTCCCTACACGACGCTCTTCCGATCT $INDIR/${FILES[$i]} > $INDIR/${FILES[$i]%.*}.clipped 
 	#cutadapt -a GTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT $INDIR/${FILES[$i+1]} > $INDIR/${FILES[$i+1]%.*}.clipped
