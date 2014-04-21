@@ -2,9 +2,11 @@
 #PBS -N alignment
 #PBS -r n
 #PBS -V
-#PBS -l nodes=1:ppn=4
+#PBS -l nodes=1:ppn=8
 #PBS -l walltime=160:00:00
 #PBS -d /home/mrals/ETP
+
+set -e
 
 . ~/.bash_profile
 #General
@@ -15,7 +17,7 @@ PATH=$PATH:/home/mrals/pckges/sratoolkit.2.3.4-2-centos_linux64/bin/:/usr/local/
 export PATH
 [[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm"
 rvm use 2.0.0
-CORES=4
+CORES=8
 INDIR=processed_fastq/processed
 OUTDIR=SAM_unprocessed
 FINALFASTQ=final/finalfastq
@@ -33,12 +35,13 @@ FILES=(`/usr/bin/ls $INDIR`)
 
 for ((i=0;i<${#FILES[@]}; i+=2))
 do
-	mkdir $FINALQC/${FILES[$i]%_*} $FINALFASTQ/${FILES[$i]%_*} tmp/${FILES[$i]%_*}
-	bowtie2 -p 4 --fr --very-sensitive -x $rRNA --un-gz $FINALFASTQ/${FILES[$i]%_*} -1 $INDIR/${FILES[$i]} -2 $INDIR/${FILES[$i+1]} -S /dev/null
-	#bowtie2 -p 4 -N 1 --very-sensitive -x $REFERENCE --un-gz tmp/${${FILES[$i]}%_*} -U $FINALFASTQ/$f -S /dev/stdout | samtools view -bhS - > $OUTDIR/${f%.*.*}$SUFFIX
+        #mkdir $FINALQC/${FILES[$i]%_*} tmp/${FILES[$i]%_*}
+	bowtie2 -p $CORES --mp 20,5 --no-mixed --fr --dpad 0 --fast --no-discordant -x $rRNA --un-conc-gz $FINALFASTQ/${FILES[$i]%_*}.fastq.gz -1 $INDIR/${FILES[$i]} -2 $INDIR/${FILES[$i+1]} -S /dev/null
+	echo 
+	bowtie2 -p $CORES --very-sensitive -x $REFERENCE -1 $FINALFASTQ/${FILES[$i]%_*}.1 -2 $FINALFASTQ/${FILES[$i]%_*}.2 -S /dev/stdout | samtools view -bhS - > $OUTDIR/${FILES[$i]%_*}$SUFFIX
 	
-	fastqc -j /usr/bin/java -f fastq -o $FINALQC/${FILES[$i]%_*} $FINALFASTQ/${FILES[$i]}
-	fastqc -j /usr/bin/java -f fastq -o $FINALQC/${FILES[$i+1]%_*} $FINALFASTQ/${FILES[$i+1]}
+	fastqc -j /usr/bin/java -f fastq -o $FINALQC/${FILES[$i]%_*} $FINALFASTQ/${FILES[$i]%_*}.1
+	fastqc -j /usr/bin/java -f fastq -o $FINALQC/${FILES[$i+1]%_*} $FINALFASTQ/${FILES[$i]%_*}.2
 	#zcat $FINALFASTQ/$f | fastx_quality_stats -Q $PHRED > $FINALQC/${f%.*.*}/fastx_report.txt
 	#zcat $FINALFASTQ/$f | prinseq -fastq stdin -stats_all > $FINALQC/${f%.*.*}/prinseq_stats.txt
 done

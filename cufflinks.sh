@@ -44,7 +44,7 @@ do
 	# Cufflinks produces a transcripts.gtf which contains the new assembly
 	# It produces a isoforms.fpkm_tracking, a estimated isoform expression values in FPKM Tracking Format
 	# Finally, it produces a genes.fpkm_tracking, a etimated gene expression values in FPKM Tracking Format
-	cufflinks -o $CUFFLINKS/${f} -p $CORES -g $REFERENCE --3-overhang-tolerance 25 $INDIR/$f.3.bam
+	cufflinks -o $CUFFLINKS/${f} -p $CORES --library-type fr-firststrand -g $REFERENCE --3-overhang-tolerance 25 $INDIR/$f.3.bam
 	# Second, it runs cuffcompare to compare the new assembly to the reference assembly.
 	# This produces a .stats file that describes the sensitivity and specificity for detecting nucleotide, exons, introns, transcripts genes
 	# It also produces a .combined.gtf which is mostly pointless here.
