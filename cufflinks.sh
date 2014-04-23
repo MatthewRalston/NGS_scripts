@@ -4,7 +4,9 @@
 #PBS -V
 #PBS -l nodes=1:ppn=6
 #PBS -l walltime=240:00:00
-#PBS -d /home/mrals/test
+#PBS -d /home/mrals/ETP
+
+#set -e
 
 . ~/.bash_profile
 #General
@@ -30,16 +32,22 @@ CUFFLINKS=Cufflinks_assemblies
 CUFFCOMPARE=Cuffcompare
 #PEAKCALLING=Peak_call
 LOGDIR=logs
-which cufflinks >> $LOGDIR/cufflinks.log
+which cufflinks >> temp.txt
 REFERENCE=reference/CAC.gff
 REFFASTA=reference/CAC.txt
 EXPRDIR=counts
 FILES=`/usr/bin/ls $INDIR/*.3.bam`
+
+PICARD=/usr/local/picard-tools-1.67
+TMPD=/home/mrals/ETP/tmp/
+
+
+
 for f in $FILES
 do
         f=${f##*/};f=${f%*.*.*}
 	mkdir $CUFFLINKS/$f $CUFFCOMPARE/$f
-	echo "start $f" `zdump EST` >> $LOGDIR/cufflinks.log
+
 	# First, this script uses cufflinks to produce a reference guided transcriptome assembly
 	# Cufflinks produces a transcripts.gtf which contains the new assembly
 	# It produces a isoforms.fpkm_tracking, a estimated isoform expression values in FPKM Tracking Format
@@ -53,13 +61,22 @@ do
 	# It produces a .tmap file which lists retains the novel/partial/full transcript match (to the refrence)
 	#    and lists the closest matching reference transcript, the coverage, expression (FPKM), confidence intervals for the FPKM, and length of the resulting transcript
 	#cuffcompare -r $REFERENCE -o $CUFFCOMPARE/${f} -e 10 -T $CUFFLINKS/${f}/transcripts.gtf
-	echo "end $f" `zdump EST` >> $LOGDIR/cufflinks.log
+
 done
 
 find $CUFFLINKS/ -name 'transcripts.gtf' > assemblies.txt
 cuffmerge -o $CUFFLINKS -p $CORES -s $REFFASTA assemblies.txt
+gtfToGenePred -genePredExt $CUFFLINKS/merged.gtf $CUFFLINKS/tmp.refflat
+awk 'BEGIN{FS="\t"};{print $12"\t"$1"\t"$2"\t"$3"\t"$4"\t"$5"\t"$6"\t"$7"\t"$8"\t"$9"\t"$10}' $CUFFLINKS/tmp.refflat > $CUFFLINKS/merged.refFlat
+REFFLAT=$CUFFLINKS/merged.refflat
 
+for file in $FILES
+do
+    ############ OPTIONAL #############
+	# FIX ME: CollectRnaSeqMetrics: Program that collects information about alignment of reads to coding, intronic, UTR, intergenic, ribosomal, etc.
+	java -jar $PICARD/CollectRnaSeqMetrics.jar INPUT=$file REF_FLAT=$REFFLAT TMP_DIR=$TMPD STRAND_SPECIFICITY=FIRST_READ_TRANSCRIPTION_STRAND MINIMUM_LENGTH=50 CHART_OUTPUT=$LOGDIR/${file%.*}.3.RNAseq_metrics.pdf OUTPUT=$LOGDIR/${file##*/*}.RNAseq_metrics.log REFERENCE_SEQUENCE=$REFFASTA ASSUME_SORTED=true
+done
 
-parallel -j $CORES samtools sort -on {} | samtools view -h - | htseq-count -s no - $CUFFLINKS/merged.gtf > $EXPRDIR/{/.}.counts ::: $FILES
+parallel -j$CORES 'samtools sort -on {} | samtools view -h - | htseq-count -s no - $CUFFLINKS/merged.gtf > $EXPRDIR/{/.}.counts' ::: $FILES
 
 ## EOF-------------------------------------------
