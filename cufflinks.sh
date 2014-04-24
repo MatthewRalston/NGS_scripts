@@ -33,7 +33,7 @@ CUFFCOMPARE=Cuffcompare
 #PEAKCALLING=Peak_call
 LOGDIR=logs
 which cufflinks >> temp.txt
-REFERENCE=reference/CAC.gff
+REFERENCE=reference/CAC.gtf
 REFFASTA=reference/CAC.txt
 EXPRDIR=counts
 FILES=`/usr/bin/ls $INDIR/*.3.bam`
@@ -65,18 +65,24 @@ do
 done
 
 find $CUFFLINKS/ -name 'transcripts.gtf' > assemblies.txt
-cuffmerge -o $CUFFLINKS -p $CORES -s $REFFASTA assemblies.txt
+cuffmerge -o $CUFFLINKS -g $REFERENCE -p $CORES -s $REFFASTA assemblies.txt
 gtfToGenePred -genePredExt $CUFFLINKS/merged.gtf $CUFFLINKS/tmp.refflat
-awk 'BEGIN{FS="\t"};{print $12"\t"$1"\t"$2"\t"$3"\t"$4"\t"$5"\t"$6"\t"$7"\t"$8"\t"$9"\t"$10}' $CUFFLINKS/tmp.refflat > $CUFFLINKS/merged.refFlat
+awk 'BEGIN{FS="\t"};{print $12"\t"$1"\t"$2"\t"$3"\t"$4"\t"$5"\t"$6"\t"$7"\t"$8"\t"$9"\t"$10}' $CUFFLINKS/tmp.refflat > $CUFFLINKS/merged.refflat
 REFFLAT=$CUFFLINKS/merged.refflat
+ANNOTATION=/home/mrals/ETP/$CUFFLINKS/merged.gtf
+export ANNOTATION
 
 for file in $FILES
 do
     ############ OPTIONAL #############
 	# FIX ME: CollectRnaSeqMetrics: Program that collects information about alignment of reads to coding, intronic, UTR, intergenic, ribosomal, etc.
-	java -jar $PICARD/CollectRnaSeqMetrics.jar INPUT=$file REF_FLAT=$REFFLAT TMP_DIR=$TMPD STRAND_SPECIFICITY=FIRST_READ_TRANSCRIPTION_STRAND MINIMUM_LENGTH=50 CHART_OUTPUT=$LOGDIR/${file%.*}.3.RNAseq_metrics.pdf OUTPUT=$LOGDIR/${file##*/*}.RNAseq_metrics.log REFERENCE_SEQUENCE=$REFFASTA ASSUME_SORTED=true
+	java -jar $PICARD/CollectRnaSeqMetrics.jar INPUT=$file REF_FLAT=$REFFLAT TMP_DIR=$TMPD STRAND_SPECIFICITY=FIRST_READ_TRANSCRIPTION_STRAND MINIMUM_LENGTH=50 CHART_OUTPUT=$LOGDIR/${file##*/*}.RNAseq_metrics.pdf OUTPUT=$LOGDIR/${file##*/*}.RNAseq_metrics.log REFERENCE_SEQUENCE=$REFFASTA ASSUME_SORTED=true
 done
 
-parallel -j$CORES 'samtools sort -on {} | samtools view -h - | htseq-count -s no - $CUFFLINKS/merged.gtf > $EXPRDIR/{/.}.counts' ::: $FILES
+
+
+
+
+
 
 ## EOF-------------------------------------------
