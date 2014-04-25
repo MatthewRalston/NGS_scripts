@@ -26,7 +26,7 @@ rvm use 2.0.0
 # This is mostly to just check the transcriptome assembly, showing a significant increase in signal near the transcription start site, indicative of multiple
 # unique reads mapping near the start site.
 
-
+alias cuffdiff='/usr/local/cufflinks-2.2.0/cuffdiff'
 CORES=6
 INDIR=SAM_processed
 LOGDIR=logs
@@ -37,25 +37,27 @@ export REFERENCE
 REFFASTA=reference/CAC.txt
 EXPRDIR=counts
 BAM=`/usr/bin/ls $INDIR/*.3.bam`
-NS30='$CUFFQUANT/NS30A/abundances.cxb,$CUFFQUANT/NS30B/abundances.cxb'
-NS75='$CUFFQUANT/NS75A/abundances.cxb,$CUFFQUANT/NS75B/abundances.cxb'
-NS270='$CUFFQUANT/NS270A/abundances.cxb'
+NS30='Cuffquant/NS30A/abundances.cxb,Cuffquant/NS30B/abundances.cxb'
+NS75='Cuffquant/NS75A/abundances.cxb,Cuffquant/NS75B/abundances.cxb'
+NS270='Cuffquant/NS270A/abundances.cxb'
 
 PICARD=/usr/local/picard-tools-1.67
 TMPD=/home/mrals/ETP/tmp/
 
-parallel -j$CORES 'htseq-count -f bam -r pos -s yes {} $REFERENCE > counts/{/.}.counts' ::: $BAM
+#parallel -j$CORES 'htseq-count -f bam -r pos -s yes {} $REFERENCE > counts/{/.}.counts' ::: $BAM
 
-for file in $BAM
-do
-    f=${file##*/};f=${f%*.*.*}
+#for file in $BAM
+#do
+#    f=${file##*/};f=${f%*.*.*}
     #mkdir $CUFFQUANT/$f
-    cuffquant -o $CUFFQUANT/$f -v -p $CORES -M $MASK -b $REFFASTA -u --library-type fr-firststrand $REFERENCE $file
-done
+#    cuffquant -o $CUFFQUANT/$f -v -p $CORES -M $MASK -b $REFFASTA -u --library-type fr-firststrand $REFERENCE $file
+#done
 
 
-cuffdiff -p $CORES -o $CUFFQUANT -L NS30,NS75,NS270 -T -b $REFFASTA -u -M $MASK --library-type fr-firststrand --library-norm-method geometric --min-reps-for-js-test 2 $REFERENCE $NS30 $NS75 $NS270
+echo `which cuffdiff`
 
-cuffnorm -p $CORES-o $CUFFQUANT -L NS30,NS75,NS270 --library-type fr-firststrand --library-norm-method geometric $REFERENCE $NS30 $NS75 $NS270
+/usr/local/cufflinks-2.2.0/cuffdiff -p $CORES -o $CUFFQUANT -T -b $REFFASTA -u -M $MASK --library-type fr-firststrand --library-norm-method geometric --min-reps-for-js-test 1 $REFERENCE $NS30 $NS75 $NS270
+
+cuffnorm -p $CORES-o $CUFFQUANT --library-type fr-firststrand --library-norm-method geometric $REFERENCE $NS30 $NS75 $NS270
 
 ## EOF-------------------------------------------
