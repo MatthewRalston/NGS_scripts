@@ -6,9 +6,13 @@ from next generation sequencing experiments. These scripts perform general
 QC, trimming/clipping, mapping, and processing operations on a set of fastq files.
 
 
-First, raw reads are processed through each step, assuming the all the appropriately formated files are available (gtf, etc.)
-Next, after the cufflinks.sh script produces the merged.gtf file in Cufflinks_assemblies directory, the columns must be rearranged
-so that the cufflinks-produced XLOC ids are replaced with the traditional gene ids. This can be done in excel or other software that 
-accepts and produces tab-delimited files. Afterwards, this modified merged.gtf file should be stored in the reference directory.
-Next, the gene counts and FPKM counts can be produced from the modified gtf file.
+1. Paired end fastq are checked with initialqc.sh
+2. These files are then processed by trimfiltercheck.sh, which clips adapters, trims by quality, and filters the reads.
+3. Next, reads are aligned to rRNA sequences (in silico rRNA removal) before aligning the difference to the genome in bowtie.sh.
+4. The alignment files are processed (sorting, marking duplicates, Picard metrics, etc.) with postprocess.sh
+5. A consensus transcriptome assembly is created from the files using cufflinks.sh.
+6. The assembly must be manually curated with the assistance of a genome browser with cufflinks.sh.
+7. The expression levels are tabulated through several means, most of which are dependent on a good transcriptome assembly, in expression.sh.
+
+
 

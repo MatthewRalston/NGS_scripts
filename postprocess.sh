@@ -106,7 +106,7 @@ do
 	java -jar $PICARD/ValidateSamFile.jar INPUT=$OUTDIR/${file%.*}.3.bam OUTPUT=$LOGDIR/${file%.*}.3_bam_validation.log TMP_DIR=$TMPD
 	
 	# PAIRED END ONLY: CollectInsertSizeMetrics
-	java -jar $PICARD/CollectInsertSizeMetrics.jar INPUT=$OUTDIR/${file%.*}.3.bam  HISTOGRAM_FILE=$LOGDIR/${file%.*}.3.insert_size_histogram.jpg OUTPUT=$LOGDIR/${file%.*}.3.insert_size_stats.log REFERENCE_SEQUENCE=$REFERENCE ASSUME_SORTED=true TMP_DIR=$TMPD/
+	java -jar $PICARD/CollectInsertSizeMetrics.jar INPUT=$OUTDIR/${file%.*}.3.bam  HISTOGRAM_FILE=$LOGDIR/${file%.*}.3.insert_size_histogram.pdf OUTPUT=$LOGDIR/${file%.*}.3.insert_size_stats.log REFERENCE_SEQUENCE=$REFERENCE ASSUME_SORTED=true TMP_DIR=$TMPD/
 done
 
 
