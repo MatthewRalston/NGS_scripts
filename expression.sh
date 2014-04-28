@@ -6,7 +6,7 @@
 #PBS -l walltime=240:00:00
 #PBS -d /home/mrals/ETP
 
-#set -e
+set -e
 
 #General
 PATH=$PATH:/home/mrals/pckges/Vienna/bin:/home/mrals/home/bin/:/home/mrals/bin/
@@ -29,13 +29,17 @@ REFERENCE=reference/CAC.gtf
 MASK=reference/mask.gtf
 export REFERENCE
 REFFASTA=reference/CAC.txt
-EXPRDIR=counts
+REFGENOME=reference/CAC.genome
+#EXPRDIR=counts
+EXPRDIR=Expression
 BAM=`/usr/bin/ls $INDIR/*.3.bam`
 NS30='Cuffquant/NS30A/abundances.cxb,Cuffquant/NS30B/abundances.cxb'
 NS75='Cuffquant/NS75A/abundances.cxb,Cuffquant/NS75B/abundances.cxb'
 NS270='Cuffquant/NS270A/abundances.cxb'
 PICARD=/usr/local/picard-tools-1.67
 TMPD=/home/mrals/ETP/tmp/
+CIRC=/home/mrals/ETP/circos
+base=/home/mrals/ETP
 
 #########################     2     ##########################
 # Next, the manually curated assembly is converted into refFlat format to be used to generate
@@ -53,16 +57,39 @@ TMPD=/home/mrals/ETP/tmp/
 #########################     3     ##########################
 # Then, htseq-count is used to generate raw read counts for individual CDSs or for whole genes
 # in the reference assembly.
-parallel -j$CORES 'htseq-count -f bam -r pos -m intersection-nonempty -s yes {} $REFERENCE > counts/{/.}.counts' ::: $BAM
+#parallel -j$CORES 'htseq-count -f bam -r pos -m intersection-nonempty -s yes {} $REFERENCE > $EXPRDIR/{/.}.counts' ::: $BAM
 
 
 #########################     4     ##########################
 # Next, genes are quantified in each expression set using cuffquant
+# Also, the coverage vectors for each factorial combination are calculated in bedGraph format.
 for file in $BAM
 do
     f=${file##*/};f=${f%*.*.*}
+    #mkdir $CIRC/$f
     #mkdir $CUFFQUANT/$f
-    cuffquant -o $CUFFQUANT/$f -v -p $CORES -M $MASK -b $REFFASTA -u --library-type fr-firststrand $REFERENCE $file
+    #cuffquant -o $CUFFQUANT/$f -v -p $CORES -M $MASK -b $REFFASTA -u --library-type fr-firststrand $REFERENCE $file
+    #samtools sort -on $file - | bamToBed -bedpe -mate1 > $EXPRDIR/$f.bedpe 
+    #cat $EXPRDIR/$f.bedpe | ./bedscript.rb | sort -k 1,1 > $EXPRDIR/$f.bed
+    #bedtools genomecov -bga -strand + -i $EXPRDIR/$f.bed -g $REFGENOME > $EXPRDIR/$f+.cov
+    #bedtools genomecov -bga -strand - -i $EXPRDIR/$f.bed -g $REFGENOME > $EXPRDIR/$f-.cov
+    echo $EXPRDIR/$f+.cov
+    grep -rl "gi|15893298|ref|NC_003030.1|" $EXPRDIR/$f+.cov | xargs sed -i 's/gi|15893298|ref|NC_003030.1|/C/g'
+    grep -rl "gi|15004705|ref|NC_001988.2|" $EXPRDIR/$f+.cov | xargs sed -i 's/gi|15004705|ref|NC_001988.2|/P/g'
+    grep -rl "gi|15893298|ref|NC_003030.1|" $EXPRDIR/$f-.cov | xargs sed -i 's/gi|15893298|ref|NC_003030.1|/C/g'
+    grep -rl "gi|15004705|ref|NC_001988.2|" $EXPRDIR/$f-.cov | xargs sed -i 's/gi|15004705|ref|NC_001988.2|/P/g'
+    # The file is then prepared for use in creating circos plots
+    OLD1="file=plot1.old"
+    OLD2="file=plot2.old"
+    TMP="file="
+    cp $CIRC/circos.conf $CIRC/$f/; cp $CIRC/ideogram.conf $CIRC/$f; cp $CIRC/ticks.conf
+    cd $CIRC/$f
+    TEMP=$TMP/$EXPRDIR/$f+.cov
+    grep -rl $OLD1 circos.conf | xargs sed -i 's/'$OLD1'/'$TEMP'/g'
+    TEMP=$TMP/$EXPRDIR/$f-.cov
+    grep -rl $OLD2 circos.conf | xargs sed -i 's/'$OLD2'/'$TEMP'/g'
+    circos
+    cd $base
 done
 
 
@@ -72,6 +99,10 @@ done
 
 #########################     6     ##########################
 # Next, gene expression levels are quantified using the reference transcriptome
-cuffnorm -p $CORES -o $CUFFQUANT -L NS30,NS75,NS270 --library-type fr-firststrand --library-norm-method geometric $REFERENCE $NS30 $NS75 $NS270
+#cuffnorm -p $CORES -o $CUFFQUANT -L NS30,NS75,NS270 --library-type fr-firststrand --library-norm-method geometric $REFERENCE $NS30 $NS75 $NS270
+
+#########################     7     ##########################
+# Finally, a coverage vector is constructed in bedGraph format 
+
 
 ## EOF-------------------------------------------

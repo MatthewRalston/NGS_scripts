@@ -82,7 +82,7 @@ do
 	############   1   ################
 	# CleanSam: Reads a SAM file, soft-clips alignments that overhang the end of the reference sequence (e.g. for circular bact. chromosomes)
 	#              also, sets unmapped reads MAPQ to 0, if not already.
-	samtools view -h -o /dev/stdout $INDIR/$file | java -jar $PICARD/CleanSam.jar INPUT=/dev/stdin OUTPUT=$OUTDIR/${file%.*}.1.sam
+	samtools view -h -q 5 -o /dev/stdout $INDIR/$file | java -jar $PICARD/CleanSam.jar INPUT=/dev/stdin OUTPUT=$OUTDIR/${file%.*}.1.sam
 
 	# ValidateSamFile: Checks the validity of a SAM/BAM file, prints the results to cleansam.log
 	java -jar $PICARD/ValidateSamFile.jar INPUT=$OUTDIR/${file%.*}.1.sam OUTPUT=$LOGDIR/${file%.*}.1_sam_validation.log
