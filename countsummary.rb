@@ -33,7 +33,7 @@
 #
 ################################################
 
-
+DIR="/home/mrals/ETP/counts"
 
 
 
@@ -48,25 +48,39 @@
 ################################################
 
 
+def parse(file)
+  dict={}
+  File.open(file,'r').each do |line|
+    dict[line.split[0]]=line.split[1] if line.include?("CA_")
+  end
+  return dict
+end
+
 
 def main
-  x=0; rrnarate=[]; postfilterrate=[]; total=[]; minusrrna=[]
-  begin
-    while line=STDIN.gets
-      if x%2 == 0 and (line.include?('reads; of these:') or line.include?('overall alignment rate'))
-        total << line.split[0] if line.include?('reads; of these:')
-        (rrnarate << line.split('%')[0]; x+=1) if line.include?('overall alignment rate')
-      elsif x%2 == 1 and (line.include?('reads; of these:') or line.include?('overall alignment rate')) 
-        minusrrna << line.split[0] if line.include?('reads; of these:')
-        (postfilterrate << line.split('%')[0]; x+=1) if line.include?('overall alignment rate')
-      end
-    end
-  rescue NoMethodError
+  dict={};new={}
+  Dir.foreach(DIR) do |file|
+    dict[file[0...-9]] = parse(DIR+"/"+file) if file.include?(".counts")
   end
-  
-  STDOUT.puts("rRNA-rate\tpost-filter_alignment-rate\ttotal_reads\tminus_rRNA")
-  rrnarate.size.times do |c|
-    STDOUT.puts([rrnarate[c], postfilterrate[c], total[c], minusrrna[c]].join("\t"))
+  conds=[]
+  dict.each do |cond,dict2|
+    conds << cond
+    dict2.each do |gene,count|
+      new[gene]={} unless new[gene]
+      new[gene][cond]=count 
+    end
+  end
+  new.each do |gene, counts|
+    conds.each do |cond|
+      new[gene][cond]="N/A" unless new[gene][cond]
+    end
+  end
+
+  File.open("countsummary.txt",'w') do |file|
+    file.puts("Gene_id\t"+new["CA_C0001"].keys.join("\t"))
+    new.each do |gene,counts|
+      file.puts(([gene]+counts.values).join("\t"))
+    end
   end
 end
   

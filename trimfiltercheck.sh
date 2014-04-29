@@ -48,7 +48,7 @@ do
 
         #sickle pe -t sanger -q $q -l $min -f $INDIR/${FILES[$i]%.*}.clipped -r $INDIR/${FILES[$i+1]%.*}.clipped -o $OUTPUT/${FILES[$i]%.*} -p $OUTPUT/${FILES[$i+1]%.*}
 
-	java -jar /home/mrals/pckges/Trimmomatic-0.32/trimmomatic-0.32.jar PE -threads 6 -phred33 -trimlog logs/${FILES%_*}.trimmomatic.log $INDIR/${FILES[$i]} $INDIR/${FILES[$i+1]} $OUTPUT/${FILES[$i]} /dev/null $OUTPUT/${FILES[$i+1]} /dev/null ILLUMINACLIP:/home/mrals/pckges/Trimmomatic-0.32/adapters/ScriptSeq.fa:1:29:14 LEADING:20 TRAILING:15 SLIDINGWINDOW:4:20 MINLEN:30
+	java -jar /home/mrals/pckges/Trimmomatic-0.32/trimmomatic-0.32.jar PE -threads 6 -phred33 -trimlog logs/${FILES%_*}.trimmomatic.log $INDIR/${FILES[$i]} $INDIR/${FILES[$i+1]} $OUTPUT/${FILES[$i]} $OUTPUT/${FILES[$i]}.for.unpaired $OUTPUT/${FILES[$i+1]} $OUTPUT/${FILES[$i+1]}.rev.unpaired ILLUMINACLIP:/home/mrals/pckges/Trimmomatic-0.32/adapters/ScriptSeq.fa:1:30:12 LEADING:5 TRAILING:5 SLIDINGWINDOW:4:15 MINLEN:30
 
 	#cutadapt -a ACACTCTTTCCCTACACGACGCTCTTCCGATCT $INDIR/${FILES[$i]} > $INDIR/${FILES[$i]%.*}.clipped 
 	#cutadapt -a GTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT $INDIR/${FILES[$i+1]} > $INDIR/${FILES[$i+1]%.*}.clipped
@@ -57,8 +57,8 @@ do
 	#fastq_quality_filter -Q $PHRED -q $q100 -p 100 -z > $OUTPUT/$file
 	#gzip $INDIR/${FILES[$i]%.*}.clipped; gzip $INDIR/${FILES[$i+1]%.*}.clipped; gzip $OUTPUT/${FILES[$i]%.*}; gzip $OUTPUT/${FILES[$i+1]%.*}
 	mkdir $QC/${FILES[$i]%_*} 
-	fastqc -j /usr/bin/java -f fastq -o $QC/${FILES[$i]%_*} $OUTPUT/${FILES[$i]%.*}
-	fastqc -j /usr/bin/java -f fastq -o $QC/${FILES[$i+1]%_*} $OUTPUT/${FILES[$i+1]%.*}
+	fastqc -j /usr/bin/java -f fastq -o $QC/${FILES[$i]%_*} $OUTPUT/${FILES[$i]}
+	fastqc -j /usr/bin/java -f fastq -o $QC/${FILES[$i+1]%_*} $OUTPUT/${FILES[$i+1]}
 	#zcat $OUTPUT/${FILES[$i]} | fastx_quality_stats -Q $PHRED > $QC/${FILES[$i]%_*}/${FILES[$i]%.*}.fastx
 	#zcat $OUTPUT/${FILES[$i]} | prinseq -fastq stdin -stats_all > $QC/${FILES[$i]%_*}/${FILES[$i]%.*}.prinseq
 	#zcat $OUTPUT/${FILES[$i+1]} | fastx_quality_stats -Q $PHRED > $QC/${FILES[$i+1]%_*}/${FILES[$i+1]%.*}.fastx

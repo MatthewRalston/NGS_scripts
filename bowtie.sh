@@ -35,13 +35,13 @@ FILES=(`/usr/bin/ls $INDIR`)
 
 for ((i=0;i<${#FILES[@]}; i+=2))
 do
-        #mkdir $FINALQC/${FILES[$i]%_*} tmp/${FILES[$i]%_*}
-	bowtie2 -p $CORES --mp 20,5 --no-mixed --fr --dpad 0 --fast --no-discordant -x $rRNA --un-conc-gz $FINALFASTQ/${FILES[$i]%_*}.fastq.gz -1 $INDIR/${FILES[$i]} -2 $INDIR/${FILES[$i+1]} -S /dev/null
-	echo 
-	bowtie2 -p $CORES --very-sensitive -x $REFERENCE -1 $FINALFASTQ/${FILES[$i]%_*}.fastq.1.gz -2 $FINALFASTQ/${FILES[$i]%_*}.fastq.2.gz -S /dev/stdout | samtools view -bhS - > $OUTDIR/${FILES[$i]%_*}$SUFFIX
-	
-	fastqc -j /usr/bin/java -f fastq -o $FINALQC/${FILES[$i]%_*} $FINALFASTQ/${FILES[$i]%_*}.fastq.1.gz
-	fastqc -j /usr/bin/java -f fastq -o $FINALQC/${FILES[$i+1]%_*} $FINALFASTQ/${FILES[$i]%_*}.fastq.2.gz
+    #mkdir $FINALQC/${FILES[$i]%_*} tmp/${FILES[$i]%_*}
+    cat $INDIR/${FILES[$i]}.for.unpaired $INDIR/${FILES[$i+1]}.rev.unpaired >$INDIR/${FILES[$i]%_*}.unpaired
+    bowtie2 -p $CORES --mp 20,5 --no-mixed --fr --dpad 0 --fast --no-discordant -x $rRNA --un-conc-gz $FINALFASTQ/${FILES[$i]%_*}.fastq.gz -1 $INDIR/${FILES[$i]} -2 $INDIR/${FILES[$i+1]} -S /dev/null
+    bowtie2 -p $CORES --mp 20,5 --dpad 0 --fast -x $rRNA --un-gz $FINALFASTQ/${FILES[$i]}.unpaired -U $INDIR/${FILES[$i]%_*}.unpaired -S /dev/null
+    bowtie2 -p $CORES --very-sensitive -x $REFERENCE -1 $FINALFASTQ/${FILES[$i]%_*}.fastq.1.gz -2 $FINALFASTQ/${FILES[$i]%_*}.fastq.2.gz -U $FINALFASTQ/${FILES[$i]%_*}.unpaired -S /dev/stdout | samtools view -bhS - > $OUTDIR/${FILES[$i]%_*}$SUFFIX
+    fastqc -j /usr/bin/java -f fastq -o $FINALQC/${FILES[$i]%_*} $FINALFASTQ/${FILES[$i]%_*}.fastq.1.gz
+    fastqc -j /usr/bin/java -f fastq -o $FINALQC/${FILES[$i+1]%_*} $FINALFASTQ/${FILES[$i]%_*}.fastq.2.gz
 	#zcat $FINALFASTQ/$f | fastx_quality_stats -Q $PHRED > $FINALQC/${f%.*.*}/fastx_report.txt
 	#zcat $FINALFASTQ/$f | prinseq -fastq stdin -stats_all > $FINALQC/${f%.*.*}/prinseq_stats.txt
 done

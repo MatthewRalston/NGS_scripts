@@ -2,11 +2,11 @@
 #PBS -N gene_express
 #PBS -r n
 #PBS -V
-#PBS -l nodes=1:ppn=6
+#PBS -l nodes=1:ppn=4
 #PBS -l walltime=240:00:00
 #PBS -d /home/mrals/ETP
 
-set -e
+#set -e
 
 #General
 PATH=$PATH:/home/mrals/pckges/Vienna/bin:/home/mrals/home/bin/:/home/mrals/bin/
@@ -57,51 +57,58 @@ base=/home/mrals/ETP
 #########################     3     ##########################
 # Then, htseq-count is used to generate raw read counts for individual CDSs or for whole genes
 # in the reference assembly.
-#parallel -j$CORES 'htseq-count -f bam -r pos -m intersection-nonempty -s yes {} $REFERENCE > $EXPRDIR/{/.}.counts' ::: $BAM
+#parallel -j$CORES 'htseq-count -f bam -a 5 -r pos -m intersection-nonempty -s yes {} $REFERENCE > counts/{/.}.counts' ::: $BAM
 
 
 #########################     4     ##########################
 # Next, genes are quantified in each expression set using cuffquant
 # Also, the coverage vectors for each factorial combination are calculated in bedGraph format.
+declare -a array=()
+let x=0
 for file in $BAM
 do
     f=${file##*/};f=${f%*.*.*}
+    echo `which cuffquant`
     #mkdir $CIRC/$f
     #mkdir $CUFFQUANT/$f
-    #cuffquant -o $CUFFQUANT/$f -v -p $CORES -M $MASK -b $REFFASTA -u --library-type fr-firststrand $REFERENCE $file
+    cuffquant -o $CUFFQUANT/$f -v -p $CORES -M $MASK -b $REFFASTA -u --library-type fr-firststrand $REFERENCE $file
     #samtools sort -on $file - | bamToBed -bedpe -mate1 > $EXPRDIR/$f.bedpe 
     #cat $EXPRDIR/$f.bedpe | ./bedscript.rb | sort -k 1,1 > $EXPRDIR/$f.bed
     #bedtools genomecov -bga -strand + -i $EXPRDIR/$f.bed -g $REFGENOME > $EXPRDIR/$f+.cov
     #bedtools genomecov -bga -strand - -i $EXPRDIR/$f.bed -g $REFGENOME > $EXPRDIR/$f-.cov
-    echo $EXPRDIR/$f+.cov
-    grep -rl "gi|15893298|ref|NC_003030.1|" $EXPRDIR/$f+.cov | xargs sed -i 's/gi|15893298|ref|NC_003030.1|/C/g'
-    grep -rl "gi|15004705|ref|NC_001988.2|" $EXPRDIR/$f+.cov | xargs sed -i 's/gi|15004705|ref|NC_001988.2|/P/g'
-    grep -rl "gi|15893298|ref|NC_003030.1|" $EXPRDIR/$f-.cov | xargs sed -i 's/gi|15893298|ref|NC_003030.1|/C/g'
-    grep -rl "gi|15004705|ref|NC_001988.2|" $EXPRDIR/$f-.cov | xargs sed -i 's/gi|15004705|ref|NC_001988.2|/P/g'
+    #grep -rl "gi|15893298|ref|NC_003030.1|" $base/$EXPRDIR/$f+.cov | xargs sed -i 's/gi|15893298|ref|NC_003030.1|/C/g'
+    #grep -rl "gi|15004705|ref|NC_001988.2|" $base/$EXPRDIR/$f+.cov | xargs sed -i 's/gi|15004705|ref|NC_001988.2|/P/g'
+    #grep -rl "gi|15893298|ref|NC_003030.1|" $base/$EXPRDIR/$f-.cov | xargs sed -i 's/gi|15893298|ref|NC_003030.1|/C/g'
+    #grep -rl "gi|15004705|ref|NC_001988.2|" $base/$EXPRDIR/$f-.cov | xargs sed -i 's/gi|15004705|ref|NC_001988.2|/P/g'
     # The file is then prepared for use in creating circos plots
-    OLD1="file=plot1.old"
-    OLD2="file=plot2.old"
-    TMP="file="
-    cp $CIRC/circos.conf $CIRC/$f/; cp $CIRC/ideogram.conf $CIRC/$f; cp $CIRC/ticks.conf
-    cd $CIRC/$f
-    TEMP=$TMP/$EXPRDIR/$f+.cov
-    grep -rl $OLD1 circos.conf | xargs sed -i 's/'$OLD1'/'$TEMP'/g'
-    TEMP=$TMP/$EXPRDIR/$f-.cov
-    grep -rl $OLD2 circos.conf | xargs sed -i 's/'$OLD2'/'$TEMP'/g'
-    circos
-    cd $base
+    #OLD1="file=plot1.old"
+    #OLD2="file=plot2.old"
+    #TMP="file="
+    #cp $CIRC/*.conf $CIRC/$f/
+    #cd $CIRC/$f
+    #TEMP=$TMP/$EXPRDIR/$f+.cov
+    #grep -rl $OLD1 circos.conf | xargs sed -i 's/'$OLD1'/'$TEMP'/g'
+    #TEMP=$TMP/$EXPRDIR/$f-.cov
+    #grep -rl $OLD2 circos.conf | xargs sed -i 's/'$OLD2'/'$TEMP'/g'
+    #array[$x]=$base/$CIRC/$f/
+    #let x=$x+1
+    #cd $base
 done
 
-
 #########################     5     ##########################
+# Here, circos plots are automatically generated for each condition.
+#parallel -j$CORES 'cd {}; circos; cd $base' ::: $array
+
+
+#########################     6     ##########################
 # Then, cuffdiff is performed for the factorial combinations of interest.
 #/usr/local/cufflinks-2.2.0/cuffdiff -p $CORES -o $CUFFQUANT -T -b $REFFASTA -u -M $MASK --library-type fr-firststrand --library-norm-method geometric --min-reps-for-js-test 1 $REFERENCE $NS30 $NS75 $NS270
 
-#########################     6     ##########################
-# Next, gene expression levels are quantified using the reference transcriptome
-#cuffnorm -p $CORES -o $CUFFQUANT -L NS30,NS75,NS270 --library-type fr-firststrand --library-norm-method geometric $REFERENCE $NS30 $NS75 $NS270
-
 #########################     7     ##########################
+# Next, gene expression levels are quantified using the reference transcriptome
+cuffnorm -p $CORES -o $CUFFQUANT -L NS30,NS75,NS270 --library-type fr-firststrand --library-norm-method geometric $REFERENCE $NS30 $NS75 $NS270
+
+#########################     8     ##########################
 # Finally, a coverage vector is constructed in bedGraph format 
 
 
