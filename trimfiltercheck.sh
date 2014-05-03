@@ -24,42 +24,30 @@ OUTPUT=$OUTDIR/processed
 FILES=(`/usr/bin/ls $INDIR`)
 # PHRED encoding/offset of input files (33 sanger etc.)
 PHRED=33
-#########################
-# T R I M M I N G
-#########################
-# Minimum quality to keep from sliding window trimming
-q=20
-# Minimum read size to keep
-min=25
 
-#########################
-# F I L T E R
-#########################
-# Minimum Quality score to keep across 100% of the reads  
-q100=20
-# The fastq_quality filter can be retooled to filter differently, e.g. by setting the percentage of bases to carry that base. 
+# This script contains a rather lengthy call to trimmomatic to trim quality 
+# and clip adapters so that there is good quality in paired end reads. 
+#The TruSeq v3 adapters used in the ScriptSeq (Epicentre) v2 kit are clipped from the reads
+# Resulting unpaired reads are combined into a single file, after reverse complementing
+# reads from the second mate.
+# FastQC quality checks are then run on the resulting files.
 
 
 
 for ((i=0;i<${#FILES[@]};i+=2))
 do
-        #gunzip $INDIR/${FILES[$i]}; gunzip $INDIR/${FILES[$i+1]}
+	java -jar /home/mrals/pckges/Trimmomatic-0.32/trimmomatic-0.32.jar PE -threads 6 -phred33 -trimlog logs/${FILES%_*}.trimmomatic.log $INDIR/${FILES[$i]} $INDIR/${FILES[$i+1]} $OUTPUT/${FILES[$i]} $OUTPUT/${FILES[$i]}.for.unpaired.gz $OUTPUT/${FILES[$i+1]} $OUTPUT/${FILES[$i+1]}.rev.unpaired.gz ILLUMINACLIP:/home/mrals/pckges/Trimmomatic-0.32/adapters/TruSeq3-PE.fa:1:50:12:15 LEADING:5 TRAILING:5 SLIDINGWINDOW:4:15 MINLEN:30
 
-
-        #sickle pe -t sanger -q $q -l $min -f $INDIR/${FILES[$i]%.*}.clipped -r $INDIR/${FILES[$i+1]%.*}.clipped -o $OUTPUT/${FILES[$i]%.*} -p $OUTPUT/${FILES[$i+1]%.*}
-
-	java -jar /home/mrals/pckges/Trimmomatic-0.32/trimmomatic-0.32.jar PE -threads 6 -phred33 -trimlog logs/${FILES%_*}.trimmomatic.log $INDIR/${FILES[$i]} $INDIR/${FILES[$i+1]} $OUTPUT/${FILES[$i]} $OUTPUT/${FILES[$i]}.for.unpaired $OUTPUT/${FILES[$i+1]} $OUTPUT/${FILES[$i+1]}.rev.unpaired ILLUMINACLIP:/home/mrals/pckges/Trimmomatic-0.32/adapters/ScriptSeq.fa:1:30:12 LEADING:5 TRAILING:5 SLIDINGWINDOW:4:15 MINLEN:30
-
-	#cutadapt -a ACACTCTTTCCCTACACGACGCTCTTCCGATCT $INDIR/${FILES[$i]} > $INDIR/${FILES[$i]%.*}.clipped 
-	#cutadapt -a GTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT $INDIR/${FILES[$i+1]} > $INDIR/${FILES[$i+1]%.*}.clipped
-
-
-	#fastq_quality_filter -Q $PHRED -q $q100 -p 100 -z > $OUTPUT/$file
-	#gzip $INDIR/${FILES[$i]%.*}.clipped; gzip $INDIR/${FILES[$i+1]%.*}.clipped; gzip $OUTPUT/${FILES[$i]%.*}; gzip $OUTPUT/${FILES[$i+1]%.*}
-	mkdir $QC/${FILES[$i]%_*} 
+	gunzip -c $OUTPUT/${FILES[$i+1]}.rev.unpaired.gz | fastx_reverse_complement -Q33 | gzip > $OUTPUT/${FILES[$i+1]}.rev.gz
+	cat $OUTPUT/${FILES[$i+1]}.rev.gz $OUTPUT/${FILES[$i]}.for.unpaired.gz > $OUTPUT/${FILES[$i]%_*}.unpaired.gz
+	rm $OUTPUT/${FILES[$i+1]}.rev.gz $OUTPUT/${FILES[$i+1]}.rev.unpaired.gz $OUTPUT/${FILES[$i]}.for.unpaired.gz
+		
 	fastqc -j /usr/bin/java -f fastq -o $QC/${FILES[$i]%_*} $OUTPUT/${FILES[$i]}
 	fastqc -j /usr/bin/java -f fastq -o $QC/${FILES[$i+1]%_*} $OUTPUT/${FILES[$i+1]}
-	#zcat $OUTPUT/${FILES[$i]} | fastx_quality_stats -Q $PHRED > $QC/${FILES[$i]%_*}/${FILES[$i]%.*}.fastx
+	fastqc -j /usr/bin/java -f fastq -o $QC/${FILES[$i+1]%_*}.unpaired $OUTPUT/${FILES[$i]%_*}.unpaired.gz
+
+
+#zcat $OUTPUT/${FILES[$i]} | fastx_quality_stats -Q $PHRED > $QC/${FILES[$i]%_*}/${FILES[$i]%.*}.fastx
 	#zcat $OUTPUT/${FILES[$i]} | prinseq -fastq stdin -stats_all > $QC/${FILES[$i]%_*}/${FILES[$i]%.*}.prinseq
 	#zcat $OUTPUT/${FILES[$i+1]} | fastx_quality_stats -Q $PHRED > $QC/${FILES[$i+1]%_*}/${FILES[$i+1]%.*}.fastx
 	#zcat $OUTPUT/${FILES[$i+1]} | prinseq -fastq stdin -stats_all > $QC/${FILES[$i+1]%_*}/${FILES[$i+1]%.*}.prinseq
