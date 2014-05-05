@@ -3,7 +3,7 @@
 #PBS -r n
 #PBS -V
 #PBS -l nodes=1:ppn=8
-#PBS -l walltime=160:00:00
+#PBS -l walltime=300:00:00
 #PBS -d /home/mrals/ETP
 
 set -e
