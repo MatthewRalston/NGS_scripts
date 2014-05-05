@@ -159,9 +159,9 @@ def main
         temp << line unless line.include?("SAM") or line.include?("PBS")
       end
     end
-   printer(paired,"paired-rrna.txt")
-   printer(unpaired,"unpaired-rrna.txt")
-   printer(total,"alignment_summary.txt")
+   printer(paired,"summary-paired.txt")
+   printer(unpaired,"summary-unpaired.txt")
+   printer(total,"summary-alignment.txt")
   rescue NoMethodError
   end
   

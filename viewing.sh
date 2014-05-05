@@ -102,7 +102,7 @@ do
     samtools view -hb -f 161 $file | samtools view -hb -F 28 - > $MRG/pair.minus.rev.con
 
     ############# U N P A I R E D #########
-    samtools view -hb -F 21 $file $MRG/un.plus
+    samtools view -hb -F 21 $file > $MRG/un.plus
     samtools view -hb -F 5 $file | samtools view -hb -f 16 - > $MRG/un.minus
     # Merge - sort
     plus=`/usr/bin/ls $MRG/*.plus*`
