@@ -59,56 +59,61 @@ base=/home/mrals/ETP
 for file in $FILES
 do
     echo $file
-    rm $MRG/*
+    f=${file##*/};f=${f%*.*.*}
+    #rm $MRG/*
     ############################### P A I R E D ########################
     ########      P L U S
     # Discordant alignment type 1: dis1
     # this first type of alignment refers to a discordant type alignment
     # to the positive strand, where the first read aligns to the + strand
     # and the second read does not align to either strand (discordant)
-    echo "plus paired dis1"
-    samtools view -hb -f 73 $file | samtools view -hb -F 20 - > $MRG/pair.plus.for.dis1
-    samtools view -hb -f 133 $file | samtools view -hb -F 40 - > $MRG/pair.plus.rev.dis1
+
+    #samtools view -hb -f 73 $file | samtools view -hb -F 20 - > $MRG/pair.plus.for.dis1
+    #samtools view -hb -f 133 $file | samtools view -hb -F 40 - > $MRG/pair.plus.rev.dis1
     # Discordant alignment type 2: dis 2
     # The second type of discordant alignment is where the first read does not
     # align to either strand and the second read aligns to the minus strand.
-    samtools view -hb -f 101 $file | samtools view -hb -F 8 - > $MRG/pair.plus.for.dis2
-    samtools view -hb -f 153 $file | samtools view -hb -F 36 - > $MRG/pair.plus.rev.dis2
+    #samtools view -hb -f 101 $file | samtools view -hb -F 8 - > $MRG/pair.plus.for.dis2
+    #samtools view -hb -f 153 $file | samtools view -hb -F 36 - > $MRG/pair.plus.rev.dis2
     # Concordant alignment
     # This type of alignment is where the first read aligns to the forward strand
     # and the second read aligns to ther second strand, indicating that the sequenced
     # fragment originates from the forward (+) strand.
-    samtools view -hb -f 97 $file | samtools view -hb -F 28 - > $MRG/pair.plus.for.con
-    samtools view -hb -f 145 $file | samtools view -hb -F 44 - > $MRG/pair.plus.rev.con
+    #samtools view -hb -f 97 $file | samtools view -hb -F 28 - > $MRG/pair.plus.for.con
+    #samtools view -hb -f 145 $file | samtools view -hb -F 44 - > $MRG/pair.plus.rev.con
     
     ########      M I N U S
     # Discordant alignment type 1: dis1
     # this first type of alignment refers to a discordant type alignment
     # to the negative strand, where the first read aligns to the - strand
     # and the second read does not align to either strand (discordant)
-    echo "minus paired dis1"
-    samtools view -hb -f 89 $file | samtools view -hb -F 36 - > $MRG/pair.minus.for.dis1
-    samtools view -hb -f 165 $file | samtools view -hb -F 24 - > $MRG/pair.minus.rev.dis1
+
+    #samtools view -hb -f 89 $file | samtools view -hb -F 36 - > $MRG/pair.minus.for.dis1
+    #samtools view -hb -f 165 $file | samtools view -hb -F 24 - > $MRG/pair.minus.rev.dis1
     # Discordant alignment type 2: dis 2
     # The second type of discordant alignment is where the first read does not
     # align to either strand and the second read aligns to the + strand.
-    samtools view -hb -f 69 $file | samtools view -hb -F 40 - > $MRG/pair.minus.for.dis2
-    samtools view -hb -f 137 $file | samtools view -hb -F 52 - > $MRG/pair.minus.rev.dis2
+    #samtools view -hb -f 69 $file | samtools view -hb -F 40 - > $MRG/pair.minus.for.dis2
+    #samtools view -hb -f 137 $file | samtools view -hb -F 52 - > $MRG/pair.minus.rev.dis2
     # Concordant alignment
     # This type of alignment is where the first read aligns to the - strand
     # and the second read aligns to the + strand, indicating that the sequenced
     # fragment originates from the reverse (-) strand.
-    samtools view -hb -f 81 $file | samtools view -hb -F 44 - > $MRG/pair.minus.for.con
-    samtools view -hb -f 161 $file | samtools view -hb -F 28 - > $MRG/pair.minus.rev.con
+    #samtools view -hb -f 81 $file | samtools view -hb -F 44 - > $MRG/pair.minus.for.con
+    #samtools view -hb -f 161 $file | samtools view -hb -F 28 - > $MRG/pair.minus.rev.con
 
     ############# U N P A I R E D #########
-    samtools view -hb -F 21 $file > $MRG/un.plus
-    samtools view -hb -F 5 $file | samtools view -hb -f 16 - > $MRG/un.minus
+    #samtools view -hb -F 21 $file > $MRG/un.plus
+    #samtools view -hb -F 5 $file | samtools view -hb -f 16 - > $MRG/un.minus
     # Merge - sort
+    echo 'mergensort'
     plus=`/usr/bin/ls $MRG/*.plus*`
     minus=`/usr/bin/ls $MRG/*.minus*`
-    samtools merge - $plus | samtools sort - $OUTDIR/${file%*.*.*}.plus.bam
-    samtools merge - $minus | samtools sort - $OUTDIR/${file%*.*.*}.minus.bam
+    samtools merge -f tmp/plus.bam $plus 
+    samtools sort tmp/plus.bam $OUTDIR/$f.plus.bam
+    samtools merge -f tmp/minus.bam $minus
+    samtools sort tmp/minus.bam $OUTDIR/$f.minus.bam
+    #rm tmp/plus.bam tmp/minus.bam
 done
 
 #################    P A R T   2   ###################
@@ -119,8 +124,8 @@ do
     f=${file##*/};f=${f%*.*.*}
     #samtools sort -on $file - | bamToBed -bedpe -mate1 > $EXPRDIR/$f.bedpe 
     #cat $EXPRDIR/$f.bedpe | ./bedscript.rb | sort -k 1,1 > $EXPRDIR/$f.bed
-    #bedtools genomecov -bga -strand + -i $EXPRDIR/$f.bed -g $REFGENOME > $EXPRDIR/$f+.cov
-    #bedtools genomecov -bga -strand - -i $EXPRDIR/$f.bed -g $REFGENOME > $EXPRDIR/$f-.cov
+    #bedtools genomecov -bg -strand + -i $EXPRDIR/$f.bed -g $REFGENOME > $EXPRDIR/$f+.cov
+    #bedtools genomecov -bg -strand - -i $EXPRDIR/$f.bed -g $REFGENOME > $EXPRDIR/$f-.cov
     #sed -i "s/gi|15893298|ref|NC_003030.1|/C/g" $EXPRDIR/$f+.cov
     #sed -i 's/gi|15004705|ref|NC_001988.2|/P/g' $EXPRDIR/$f+.cov
     #sed -i "s/gi|15893298|ref|NC_003030.1|/C/g" $EXPRDIR/$f-.cov

@@ -78,8 +78,10 @@ done
 
 #########################     6     ##########################
 # Next, gene expression levels are quantified using the reference transcriptome
+cuffnorm -p $CORES -o $CUFFQUANT -L NS30,NS75,NS270 --library-type fr-firststrand --library-norm-method geometric $REFERENCE $NS30 $NS75 $NS270
+mv $CUFFQUANT/genes.count_table $CUFFQUANT/genes.count_table.geometric
 cuffnorm -p $CORES -o $CUFFQUANT -L NS30,NS75,NS270 --library-type fr-firststrand --library-norm-method classic-fpkm $REFERENCE $NS30 $NS75 $NS270
-
+mv $CUFFQUANT/genes.count_table $CUFFQUANT/genes.count_table.fpkm
 
 
 ## EOF-------------------------------------------
