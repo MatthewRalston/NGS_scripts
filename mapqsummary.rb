@@ -4,7 +4,7 @@
 --                                                                          --
 --                                 MATTEW RALSTON                           --
 --                                                                          --
---                         C O U N T S U M M A R Y . R B                    --
+--                               S K E L E T O N . R B                      --
 --                                                                          --
 ------------------------------------------------------------------------------
 -- TITLE                                                                    --
@@ -12,9 +12,7 @@
 --  Summer 2013                                                             --
 --                                                                          --
 ------------------------------------------------------------------------------
--- This script is designed to summarize the raw read counts per gene        --
--- produced from HTSeq-count. This file condenses them into a tab delimited --
--- count matrix printed to countsummary.txt				    --
+-- This file is designed ...
 --                                                                          --
 ------------------------------------------------------------------------------
 =end
@@ -35,9 +33,9 @@
 #
 ################################################
 
-DIR="/home/mrals/ETP/counts"
 
-
+PWD="/home/mrals/ETP/Expression"
+INFILES=`ls #{PWD}/*.bed`.split("\n")
 
 ################################################
 #
@@ -49,43 +47,31 @@ DIR="/home/mrals/ETP/counts"
 
 ################################################
 
-
 def parse(file)
-  dict={}
+  liszt=[]
   File.open(file,'r').each do |line|
-    dict[line.split[0]]=line.split[1] if line.include?("CA_")
+    liszt << line.split[-2]
   end
-  return dict
+  return liszt
 end
 
 
 def main
-  dict={};new={}
-  Dir.foreach(DIR) do |file|
-    dict[file[0...-9]] = parse(DIR+"/"+file) if file.include?(".counts")
+  dict={}
+  INFILES.each do |file|
+    dict[file[0...-4]] = parse(file)
   end
-  conds=[]
-  dict.each do |cond,dict2|
-    conds << cond
-    dict2.each do |gene,count|
-      new[gene]={} unless new[gene]
-      new[gene][cond]=count 
-    end
-  end
-  new.each do |gene, counts|
-    conds.each do |cond|
-      new[gene][cond]="N/A" unless new[gene][cond]
-    end
-  end
-
-  File.open("countsummary.txt",'w') do |file|
-    file.puts("Gene_id\t"+new["CA_C0001"].keys.join("\t"))
-    new.each do |gene,counts|
-      file.puts(([gene]+counts.values).join("\t"))
+  File.open(PWD+'/mapq_summary.txt','w') do |file|
+    file.puts(dict.keys.join("\t"))
+    temp=[]
+    dict.each {|key,value| temp << value.size}
+    temp.max.times do |x|
+      temp=[]
+      dict.each {|key,value| value[x].class == NilClass ? temp << "N/A" : temp << value[x]}
+      file.puts(temp.join("\t"))
     end
   end
 end
-  
 
 #*****************************************************************************#
 ################################################
@@ -98,8 +84,8 @@ end
 ################################################
 
 
-
 main
+
 
 
 

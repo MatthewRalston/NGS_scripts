@@ -6,30 +6,61 @@
 #PBS -l walltime=300:00:00
 #PBS -d /home/mrals/ETP
 
-set -e
+#------------------------------------------------
+# Title: bowtie.sh
+#
+# Matt Ralston
+# 
+# This file performs in silico ribosomal RNA 
+# removal and then performs a reference alignment
+# to the C. acetobutylicum genome. If desirable,
+# final fastqc checks can be performed to check
+# the quality of final rRNA-free reads. If this
+# is done, however, the alignmentsummary.rb
+# script will fail.
+# 
+#------------------------------------------------
 
-. ~/.bash_profile
-#General
-PATH=$PATH:/home/mrals/pckges/Vienna/bin:/home/mrals/home/bin/:/home/mrals/bin/
-#NGS
-PATH=$PATH:/home/mrals/pckges/sratoolkit.2.3.4-2-centos_linux64/bin/:/usr/local/bowtie-0.12.7/:/usr/local/bowtie2-2.1.0/:/usr/local/bwa-0.7.4/:/usr/local/cufflinks-2.0.2/:/usr/local/FastQC/:/usr/local/samtools-0.1.18/:/usr/local/tophat-2.0.4/:/home/mrals/pckges/seqtk-master/
 
-export PATH
-[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm"
-rvm use 2.0.0
+
+
+#------------------------------------------------
+# Parameters
+#------------------------------------------------
+# CORES: this is the number of processors requested
+# for this job.
 CORES=8
+# INDIR: this is the directory which contains the
+# reads for rRNA removal and reference alignment.
 INDIR=processed_fastq/processed
+# OUTDIR: this is the directory where the unprocessed
+# alignment files will be produced
 OUTDIR=SAM_unprocessed
+# FINALFASTQ: this is the directory where the final
+# rRNA-free fastq files will be produced
 FINALFASTQ=final/finalfastq
+# FINALQC: this is the directory where the final
+# fastqc output files will be produced.
 FINALQC=final/finalqc
-PICARD=/usr/local/picard-tools-1.67
-CHROMOSOMES='CAC.fa, CAP.fa'
+# BT2BASE: This is the prefix of the bowtie2 indexes
+# that will be used for the reference alignement
 BT2BASE=CAC
+# CHROMOSOMES: these are files of fasta sequences that can
+# be used to build bowtie2 indexes, if necessary
+#CHROMOSOMES='CAC.fa, CAP.fa'
 # Build indexes if necessary
-#bowtie2-build -f $CHROMOSOMES $BT2BASE
+#cd reference; bowtie2-build -f $CHROMOSOMES $BT2BASE; cd ..
+# REFERENCE: this is the location of the bowtie2 reference
+# indexes for the alignment
 REFERENCE=reference/$BT2BASE
+# rRNA: this is the location of the ribosomal RNA indexes
+# that will be used to perform the in silico rRNA removal.
 rRNA=reference/rRNA
+# PHRED: this is the PHRED offset that would be used for fastx toolkit
+# summary statistics.
 PHRED=33
+# SUFFIX: this is the suffix that will be used to label the output files of
+# the reference alignment, in this case, bam.
 SUFFIX='.bam'
 FILES=(`/usr/bin/ls $INDIR`)
 # This script runs bowtie on both paired and unpaired reads, aligning them first to the 

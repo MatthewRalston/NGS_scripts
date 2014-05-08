@@ -5,20 +5,31 @@
 #PBS -l nodes=1:ppn=1
 #PBS -l walltime=32:00:00
 #PBS -d /home/mrals/ETP
+#------------------------------------------------
+# Title: initialqc.sh
+#
+# Matt Ralston
+# 
+# This script performs a quality check on fastq
+# format files in a directory, reporting the 
+# results to a separate directory.
+# 
+#------------------------------------------------
 
-. ~/.bash_profile
-#General
-PATH=$PATH:/home/mrals/pckges/Vienna/bin:/home/mrals/home/bin/
-#NGS
-PATH=$PATH:/home/mrals/pckges/sratoolkit.2.3.4-2-centos_linux64/bin/:/usr/local/bowtie-0.12.7/:/usr/local/bowtie2-2.1.0/:/usr/local/bwa-0.7.4/:/usr/local/cufflinks-2.0.2/:/usr/local/FastQC/:/usr/local/samtools-0.1.18/:/usr/local/tophat-2.0.4/
-
-export PATH
-[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm"
-rvm use 2.0.0
 
 
+
+#------------------------------------------------
+# Parameters
+#------------------------------------------------
+# INDIR: the name of a directory that contains
+#        fastq or fastq.gz format reads.
 INDIR=rawdata
+# OUTDIR: the name of a directory where the 
+#         results will be reported
 OUTDIR=initialqc
+# PHRED: the phred offset/quality encoding of the
+#        reads
 PHRED=33
 
 FILES=`/usr/bin/ls $INDIR`
@@ -29,7 +40,6 @@ do
 	zcat $INDIR/$f | fastx_quality_stats -Q $PHRED  > $OUTDIR/${f%.*.*}/fastx_report.txt
 	zcat $INDIR/$f | prinseq -fastq stdin -stats_all > $OUTDIR/${f%.*.*}/prinseq_stats.txt
 done
-
 
 
 

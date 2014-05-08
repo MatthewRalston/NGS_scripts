@@ -57,7 +57,8 @@ base=/home/mrals/ETP
 #########################     3     ##########################
 # Then, htseq-count is used to generate raw read counts for individual CDSs or for whole genes
 # in the reference assembly.
-#parallel -j$CORES 'htseq-count -f bam -a 5 -r pos -m intersection-nonempty -s yes {} $REFERENCE > counts/{/.}.counts' ::: $BAM
+parallel -j$CORES 'htseq-count -f bam -a 5 -r pos -m intersection-nonempty -s yes {} $REFERENCE > counts/{/.}.counts' ::: $BAM
+./countsummary.rb
 
 
 #########################     4     ##########################

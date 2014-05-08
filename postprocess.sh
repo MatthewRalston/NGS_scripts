@@ -5,76 +5,44 @@
 #PBS -l nodes=1:ppn=1
 #PBS -l walltime=72:00:00,cput=72:00:00
 #PBS -d /home/mrals/ETP
+#------------------------------------------------
+# Title: postprocess.sh
+#
+# Matt Ralston
+# 
+# This script performs some housekeeping
+# operations on alignment files.
+# First, each alignment is cleaned and sorted,
+# duplicates are marked, the file is validated
+# and indexed. Additionally, several summary
+# statistics are generated for each alignment.
+# 
+#------------------------------------------------
+
 
 #set -e
 
-. ~/.bash_profile
-#General
-PATH=$PATH:/home/mrals/pckges/Vienna/bin:/home/mrals/home/bin/:/home/mrals/bin/
-#NGS
-PATH=$PATH:/home/mrals/pckges/sratoolkit.2.3.4-2-centos_linux64/bin/:/usr/local/bowtie-0.12.7/:/usr/local/bowtie2-2.1.0/:/usr/local/bwa-0.7.4/:/usr/local/cufflinks-2.0.2/:/usr/local/FastQC/:/usr/local/samtools-0.1.18/:/usr/local/tophat-2.0.4/:/home/mrals/pckges/seqtk-master/
-
-export PATH
-[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm"
-rvm use 2.0.0
-
-#########################
-#  D E S C R I P T I O N
-#########################
-#  AUTHOR: MATT RALSTON
-#  DATE: 1/22/14
-#
-#  This script is capable of postprocessing .sam files.
-#  1. First, the SAM file is cleaned and verified
-#  2. Second, the SAM file is sorted, and converted to BAM
-#       By default, unmapped reads are removed during this step.
-#  3. Third, duplicates are marked in the BAM file. A BAM index is created After this step and the final BAM file is validated.
-#	   Additionally, summary statistics are reported for the bam file and its degree of duplication is reported.
-#  4. OPTIONALLY, additional summary files can be created for
-#		RNAseq metrics (strand specificity, etc.)
-#		Illumina TruSeq librarys
-#		Insert size metrics
-#        
-#	This is a Torque submission BASH script that runs in the directory described in the Torque header's directory option: -d
-#   Inside this directory, Picard Tools and SAMtools are expected to run. The location of Picard-tools .jar files is specified
-#   by the option PICARD. 
-#
-#######################################################################
-#  N O T E :    This script will run with 4 mandatory arguments (below)
-#######################################################################
-#  Here, we distinguish a filepath as the name of a directory (without the terminal backslash "/")
-#  And a filename as the relative or full filename of a file.
-#   1. PICARD: The filepath of the picard install, containing the .jar files.
-#   2. REFERENCE: The filename of the reference genome, in FASTA format.
-#   3. FILES: The string-list of filename prefixes, each on a separate line, without the terminal ".sam" suffix.
-#			e.g. Two .sam files: samfiles/fileone.sam and samfiles/filetwo.sam, FILES and SAMDIR would be:
-#
-#  					FILES="fileone
-#				    filetwo"
-#					SAMDIR=samfiles
-#
-#	4. SAMDIR: Ths filepath of the directory which contains FILES.
-#	5. TMPD: The filpath of a directory for temporary files.
-#	6. LOGDIR: The (OPTIONAL) filepath to a directory for .log files (for summary statistics).
-#			If left unspecified, the resulting .log files will spill to the working directory (Torque option -d above)
-
-#########################
-# ARGUMENTS
-#########################
+#------------------------------------------------
+# Parameters
+#------------------------------------------------
+# PICARD: this is the location of the jar files
+# for the picard suite
 PICARD=/usr/local/picard-tools-1.67
+# REFERENCE: this is the fasta file of the
+# C. ac. genome for InsertSizeMetrics
 REFERENCE=reference/CAC.txt
-# Optional for RNAseq: RefFlat file
-# REFFLAT=reference/H.pylori.refFlat
+# INDIR: this is the location of the unprocessed
+# alignment files.
 INDIR=SAM_unprocessed
+# OUTDIR: this is the directory where processed
+# alignment files will be produced with the
+# suffix *.3.bam
 OUTDIR=SAM_processed
+# 
 FILES=`/usr/bin/ls $INDIR`
 TMPD=/home/mrals/ETP/tmp/
 LOGDIR=logs
 REFFLAT=reference/CAC.refflat
-
-#########################
-# S C R I P T
-#########################
 
 
 for file in $FILES

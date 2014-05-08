@@ -6,7 +6,7 @@
 #PBS -l walltime=240:00:00
 #PBS -d /home/mrals/ETP
 
-set -e
+#set -e
 
 . ~/.bash_profile
 #General
@@ -50,6 +50,7 @@ CORES=6
 EXPRDIR=Expression
 CIRC=/home/mrals/ETP/circos
 base=/home/mrals/ETP
+PICARD=/usr/local/picard-tools-1.67
 
 #########################
 # S C R I P T
@@ -109,11 +110,13 @@ do
     echo 'mergensort'
     plus=`/usr/bin/ls $MRG/*.plus*`
     minus=`/usr/bin/ls $MRG/*.minus*`
-    samtools merge -f tmp/plus.bam $plus 
-    samtools sort tmp/plus.bam $OUTDIR/$f.plus.bam
-    samtools merge -f tmp/minus.bam $minus
-    samtools sort tmp/minus.bam $OUTDIR/$f.minus.bam
+    #samtools merge -f tmp/plus.bam $plus 
+    #samtools sort tmp/plus.bam $OUTDIR/$f.plus
+    #samtools merge -f tmp/minus.bam $minus
+    #samtools sort tmp/minus.bam $OUTDIR/$f.minus
     #rm tmp/plus.bam tmp/minus.bam
+    #samtools index $OUTDIR/$f.plus.bam $OUTDIR/$f.plus.bam.bai TMP_DIR=tmp
+    #samtools index $OUTDIR/$f.minus.bam $OUTDIR/$f.minus.bam.bai TMP_DIR=tmp
 done
 
 #################    P A R T   2   ###################
@@ -122,25 +125,32 @@ let x=0
 for file in $FILES
 do
     f=${file##*/};f=${f%*.*.*}
-    #samtools sort -on $file - | bamToBed -bedpe -mate1 > $EXPRDIR/$f.bedpe 
-    #cat $EXPRDIR/$f.bedpe | ./bedscript.rb | sort -k 1,1 > $EXPRDIR/$f.bed
-    #bedtools genomecov -bg -strand + -i $EXPRDIR/$f.bed -g $REFGENOME > $EXPRDIR/$f+.cov
-    #bedtools genomecov -bg -strand - -i $EXPRDIR/$f.bed -g $REFGENOME > $EXPRDIR/$f-.cov
-    #sed -i "s/gi|15893298|ref|NC_003030.1|/C/g" $EXPRDIR/$f+.cov
-    #sed -i 's/gi|15004705|ref|NC_001988.2|/P/g' $EXPRDIR/$f+.cov
-    #sed -i "s/gi|15893298|ref|NC_003030.1|/C/g" $EXPRDIR/$f-.cov
-    #sed -i 's/gi|15004705|ref|NC_001988.2|/P/g' $EXPRDIR/$f-.cov
-    OLD1="file=plot1.old"
-    OLD2="file=plot2.old"
-    TMP="file="
-    mkdir $CIRC/$f
-    cp $CIRC/*.conf $CIRC/$f/
-    TEMP=$TMP$base/$EXPRDIR/$f+.cov
-    sed -i "s|$OLD1|$TEMP|" $CIRC/$f/circos.conf
-    TEMP=$TMP$base/$EXPRDIR/$f-.cov
-    sed -i "s|$OLD2|$TEMP|" $CIRC/$f/circos.conf
-    array[$x]=$base/$CIRC/$f/
-    let x=$x+1
+    # This produces a bedpe file that omits unpaired reads and duplicates.
+    java -jar $PICARD/MarkDuplicates.jar INPUT=$file OUTPUT=/dev/stdout METRICS_FILE=/dev/null REMOVE_DUPLICATES=true | samtools view -h -q 20 - | java -jar $PICARD/SortSam.jar INPUT=/dev/stdin OUTPUT=/dev/stdout SORT_ORDER=queryname | bamToBed -bedpe -mate1 > $EXPRDIR/$f.bedpe
+    # This option includes duplicates
+    #samtools sort -on $file - | bamToBed -bedpe -mate1 > $EXPRDIR/$f.bedpe
+    # This produces a bed file that omits paired reads and duplicates.
+    java -jar $PICARD/MarkDuplicates.jar INPUT=$file OUTPUT=/dev/stdout METRICS_FILE=/dev/null REMOVE_DUPLICATES=true | samtools view -h -q 20 -F 1 - | java -jar $PICARD/SortSam.jar INPUT=/dev/stdin OUTPUT=/dev/stdout SORT_ORDER=queryname | bamToBed > $EXPRDIR/$f.bedunpaired
+    cat $EXPRDIR/$f.bedpe | ./bedscript.rb | sort -k 1,1 -k2,2n > $EXPRDIR/$f.bedtmp
+    cat $EXPRDIR/$f.bedtmp $EXPRDIR/$f.bedunpaired | sort -k 1,1 -k2,2n > $EXPRDIR/$f.bed
+    rm $EXPRDIR/$f.bedtmp $EXPRDIR/$f.bedunpaired
+    bedtools genomecov -bg -strand + -i $EXPRDIR/$f.bed -g $REFGENOME > $EXPRDIR/$f+.cov
+    bedtools genomecov -bg -strand - -i $EXPRDIR/$f.bed -g $REFGENOME > $EXPRDIR/$f-.cov
+    sed -i "s/gi|15893298|ref|NC_003030.1|/C/g" $EXPRDIR/$f+.cov
+    sed -i 's/gi|15004705|ref|NC_001988.2|/P/g' $EXPRDIR/$f+.cov
+    sed -i "s/gi|15893298|ref|NC_003030.1|/C/g" $EXPRDIR/$f-.cov
+    sed -i 's/gi|15004705|ref|NC_001988.2|/P/g' $EXPRDIR/$f-.cov
+    #OLD1="file=plot1.old"
+    #OLD2="file=plot2.old"
+    #TMP="file="
+    #mkdir $CIRC/$f
+    #cp $CIRC/*.conf $CIRC/$f/
+    #TEMP=$TMP$base/$EXPRDIR/$f+.cov
+    #sed -i "s|$OLD1|$TEMP|" $CIRC/$f/circos.conf
+    #TEMP=$TMP$base/$EXPRDIR/$f-.cov
+    #sed -i "s|$OLD2|$TEMP|" $CIRC/$f/circos.conf
+    #array[$x]=$base/$CIRC/$f/
+    #let x=$x+1
 
 done
 

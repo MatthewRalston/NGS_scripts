@@ -8,16 +8,17 @@ QC, trimming/clipping, mapping, and processing operations on a set of fastq file
 
 
 ##Contents
-* initialqc.sh
-* trimfiltercheck.sh
-* bowtie.sh
 * alignmentsummary.rb
-* postprocess.sh
-* viewing.sh
+* bedscript.rb
+* bowtie.sh
+* countsummary.rb
 * cufflinks.sh
 * expression.sh
-* countsummary.rb
-* bedscript.rb
+* initialqc.sh
+* mapqsummary.rb
+* postprocess.sh
+* trimfiltercheck.sh
+* viewing.sh
 
 
 
@@ -34,9 +35,11 @@ QC, trimming/clipping, mapping, and processing operations on a set of fastq file
    * This script processes and checks the integrity of the alignment files
 6. viewing.sh
    * This script produces coverage vectors, circos plots, and separates the alignments by strand
-7. cufflinks.sh
+7. mapqsummary.rb
+   * This script summarizes the (filtered) mapq qualities for each condition
+8. cufflinks.sh
    * This script performs a reference based transcriptome assembly
-8. expression.sh
+9. expression.sh
    * This script calculates fpkm/geometric read counts and raw read count gene expression measurements
 
 

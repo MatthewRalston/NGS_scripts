@@ -4,7 +4,7 @@
 --                                                                          --
 --                                 MATTEW RALSTON                           --
 --                                                                          --
---                               S K E L E T O N . R B                      --
+--                   A L I G N M E N T S U M M A R Y . R B                  --
 --                                                                          --
 ------------------------------------------------------------------------------
 -- TITLE                                                                    --
@@ -12,7 +12,13 @@
 --  Summer 2013                                                             --
 --                                                                          --
 ------------------------------------------------------------------------------
--- This file is designed ...
+-- This file is designed to summarize the alignment process of paired end   --
+-- RNA-seq data. This script requires a standard error log file that        --
+-- contains the output of a run of bowtie2 on paired and unpaired, trimmed  --
+-- RNAseq reads. This should be given to this script through standard input --
+-- This file generates tab delimited text files as a result.		    --
+--									    --
+-- Usage: ./alignmentsummary.rb < bowtielog.e3294			    --
 --                                                                          --
 ------------------------------------------------------------------------------
 =end
