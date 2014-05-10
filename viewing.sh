@@ -2,59 +2,66 @@
 #PBS -N visualization
 #PBS -r n
 #PBS -V
-#PBS -l nodes=1:ppn=1
+#PBS -l nodes=1:ppn=6
 #PBS -l walltime=240:00:00
 #PBS -d /home/mrals/ETP
+#------------------------------------------------
+# Title: viewing.sh
+#
+# Matt Ralston
+# 
+# This script assists in the visualization of
+# coverage and gene expression. 
+#
+#                P A R T    1
+# Here alignment files are split by strand,
+# where paired and unpaired reads are grouped by
+# ScriptSeq v2 strand-specificity. These files
+# can be visualized in IGV, for example.
+#
+#                P A R T    2
+# Here, alignment files are parsed into BED format
+# files for read counting and visualization in
+# circos.
+# 
+#------------------------------------------------
+
 
 #set -e
 
-. ~/.bash_profile
-#General
-PATH=$PATH:/home/mrals/pckges/Vienna/bin:/home/mrals/home/bin/:/home/mrals/bin/
-#NGS
-PATH=$PATH:/home/mrals/pckges/sratoolkit.2.3.4-2-centos_linux64/bin/:/usr/local/bowtie-0.12.7/:/usr/local/bowtie2-2.1.0/:/usr/local/bwa-0.7.4/:/usr/local/cufflinks-2.0.2/:/usr/local/FastQC/:/usr/local/samtools-0.1.18/:/usr/local/tophat-2.0.4/:/home/mrals/pckges/seqtk-master/
+#------------------------------------------------
+# Parameters
+#------------------------------------------------
 
-export PATH
-[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm"
-rvm use 2.0.0
-
-#########################
-#  D E S C R I P T I O N
-#########################
-#  AUTHOR: MATT RALSTON
-#  DATE: 1/22/14
-#
-# This script contains code that is divided into two parts.
-#
-#################    P A R T   1   ###################
-# The first part is designed to separate processed BAM files by strand.
-# Condordant, discordant, and unpaired strand-speicifc alignments will be
-# separated into distinct files, for visualization in a genomic viewer.
-
-################     P A R T   2   ###################
-# The second part is designed to visualize the coverage of processed BAM files
-# by strand in a circos plot.
-
-
-#########################
-# ARGUMENTS
-#########################
-# Optional for RNAseq: RefFlat file
-# REFFLAT=reference/H.pylori.refFlat
+# INDIR: This is the location of the processed
+# alignment files to be visualized.
 INDIR=SAM_processed
+# OUTDIR: This is where the strand-specific
+# alignment files will be produced
 OUTDIR=BAM_strand
-FILES=`/usr/bin/ls $INDIR/*.3.bam`
+# MRG: This is the location where temporary
+# alignment files will be created for merging.
 MRG="tmp/merge"
+# REFGENOME: This is the location of a .genome file
+# used for bedtools.
 REFGENOME=reference/CAC.genome
+# CORES: This is the number of processor cores to
+# be used for parallelization.
 CORES=6
+# EXPRDIR: This is where the bed and bedgraph coverage
+# files will be produced
 EXPRDIR=Expression
+# CIRC: This is the location where all of the circos
+# plots and configuration files will be produced.
 CIRC=/home/mrals/ETP/circos
+# BASE: This is the home directory of the script.
 base=/home/mrals/ETP
+# PICARD: This is the location of picard jar files.
 PICARD=/usr/local/picard-tools-1.67
-
-#########################
-# S C R I P T
-#########################
+# ANNOTATION: This is the location of a bed format
+# CDS annotation. May be deprecated.
+ANNOTATION=reference/CAC.bed
+FILES=`/usr/bin/ls $INDIR/*.3.bam`
 
 #################    P A R T   1   ###################
 for file in $FILES
@@ -107,7 +114,6 @@ do
     #samtools view -hb -F 21 $file > $MRG/un.plus
     #samtools view -hb -F 5 $file | samtools view -hb -f 16 - > $MRG/un.minus
     # Merge - sort
-    echo 'mergensort'
     plus=`/usr/bin/ls $MRG/*.plus*`
     minus=`/usr/bin/ls $MRG/*.minus*`
     #samtools merge -f tmp/plus.bam $plus 
@@ -117,6 +123,10 @@ do
     #rm tmp/plus.bam tmp/minus.bam
     #samtools index $OUTDIR/$f.plus.bam $OUTDIR/$f.plus.bam.bai TMP_DIR=tmp
     #samtools index $OUTDIR/$f.minus.bam $OUTDIR/$f.minus.bam.bai TMP_DIR=tmp
+    #java -jar $PICARD/MarkDuplicates.jar INPUT=$OUTDIR/$f.plus.bam OUTPUT=/dev/stdout METRICS_FILE=/dev/null REMOVE_DUPLICATES=true | samtools view -b -h -q 20 - | bedtools genomecov -bg -ibam /dev/stdin -g $REFGENOME > $EXPRDIR/$f+.bedgraph
+    #java -jar $PICARD/MarkDuplicates.jar INPUT=$OUTDIR/$f.minus.bam OUTPUT=/dev/stdout METRICS_FILE=/dev/null REMOVE_DUPLICATES=true | samtools view -b -h -q 20 - | bedtools genomecov -bg -ibam /dev/stdin -g $REFGENOME > $EXPRDIR/$f-.bedgraph
+    #java -jar $PICARD/MarkDuplicates.jar INPUT=$OUTDIR/$f.plus.bam OUTPUT=/dev/stdout METRICS_FILE=/dev/null REMOVE_DUPLICATES=true | samtools view -b -h -q 20 - | bedtools genomecov -d -ibam /dev/stdin -g $REFGENOME > $EXPRDIR/$f+.cov
+    #java -jar $PICARD/MarkDuplicates.jar INPUT=$OUTDIR/$f.minus.bam OUTPUT=/dev/stdout METRICS_FILE=/dev/null REMOVE_DUPLICATES=true | samtools view -b -h -q 20 - | bedtools genomecov -d -ibam /dev/stdin -g $REFGENOME > $EXPRDIR/$f-.cov
 done
 
 #################    P A R T   2   ###################
@@ -124,39 +134,44 @@ declare -a array=()
 let x=0
 for file in $FILES
 do
-    f=${file##*/};f=${f%*.*.*}
+    ff=${file##*/};f=${ff%*.*.*}
     # This produces a bedpe file that omits unpaired reads and duplicates.
-    java -jar $PICARD/MarkDuplicates.jar INPUT=$file OUTPUT=/dev/stdout METRICS_FILE=/dev/null REMOVE_DUPLICATES=true | samtools view -h -q 20 - | java -jar $PICARD/SortSam.jar INPUT=/dev/stdin OUTPUT=/dev/stdout SORT_ORDER=queryname | bamToBed -bedpe -mate1 > $EXPRDIR/$f.bedpe
+    #java -jar $PICARD/MarkDuplicates.jar INPUT=$file OUTPUT=/dev/stdout METRICS_FILE=/dev/null REMOVE_DUPLICATES=true | samtools view -h -q 20 - | java -jar $PICARD/SortSam.jar INPUT=/dev/stdin OUTPUT=/dev/stdout SORT_ORDER=queryname | bamToBed -bedpe -mate1 > $EXPRDIR/$f.bedpe
     # This option includes duplicates
     #samtools sort -on $file - | bamToBed -bedpe -mate1 > $EXPRDIR/$f.bedpe
     # This produces a bed file that omits paired reads and duplicates.
-    java -jar $PICARD/MarkDuplicates.jar INPUT=$file OUTPUT=/dev/stdout METRICS_FILE=/dev/null REMOVE_DUPLICATES=true | samtools view -h -q 20 -F 1 - | java -jar $PICARD/SortSam.jar INPUT=/dev/stdin OUTPUT=/dev/stdout SORT_ORDER=queryname | bamToBed > $EXPRDIR/$f.bedunpaired
-    cat $EXPRDIR/$f.bedpe | ./bedscript.rb | sort -k 1,1 -k2,2n > $EXPRDIR/$f.bedtmp
-    cat $EXPRDIR/$f.bedtmp $EXPRDIR/$f.bedunpaired | sort -k 1,1 -k2,2n > $EXPRDIR/$f.bed
-    rm $EXPRDIR/$f.bedtmp $EXPRDIR/$f.bedunpaired
-    bedtools genomecov -bg -strand + -i $EXPRDIR/$f.bed -g $REFGENOME > $EXPRDIR/$f+.cov
-    bedtools genomecov -bg -strand - -i $EXPRDIR/$f.bed -g $REFGENOME > $EXPRDIR/$f-.cov
-    sed -i "s/gi|15893298|ref|NC_003030.1|/C/g" $EXPRDIR/$f+.cov
-    sed -i 's/gi|15004705|ref|NC_001988.2|/P/g' $EXPRDIR/$f+.cov
-    sed -i "s/gi|15893298|ref|NC_003030.1|/C/g" $EXPRDIR/$f-.cov
-    sed -i 's/gi|15004705|ref|NC_001988.2|/P/g' $EXPRDIR/$f-.cov
-    #OLD1="file=plot1.old"
-    #OLD2="file=plot2.old"
-    #TMP="file="
-    #mkdir $CIRC/$f
-    #cp $CIRC/*.conf $CIRC/$f/
-    #TEMP=$TMP$base/$EXPRDIR/$f+.cov
-    #sed -i "s|$OLD1|$TEMP|" $CIRC/$f/circos.conf
-    #TEMP=$TMP$base/$EXPRDIR/$f-.cov
-    #sed -i "s|$OLD2|$TEMP|" $CIRC/$f/circos.conf
-    #array[$x]=$base/$CIRC/$f/
-    #let x=$x+1
-
+    #java -jar $PICARD/MarkDuplicates.jar INPUT=$file OUTPUT=/dev/stdout METRICSX_FILE=/dev/null REMOVE_DUPLICATES=true | samtools view -h -q 20 -F 1 - | java -jar $PICARD/SortSam.jar INPUT=/dev/stdin OUTPUT=/dev/stdout SORT_ORDER=queryname | bamToBed > $EXPRDIR/$f.bedunpaired
+    #cat $EXPRDIR/$f.bedpe | ./bedscript.rb | sort -k 1,1 -k2,2n > $EXPRDIR/$f.bedtmp
+    #cat $EXPRDIR/$f.bedtmp $EXPRDIR/$f.bedunpaired | sort -k 1,1 -k2,2n > $EXPRDIR/$f.bed
+    #rm $EXPRDIR/$f.bedtmp $EXPRDIR/$f.bedunpaired
+    #bedtools genomecov -bg -strand + -i $EXPRDIR/$f.bed -g $REFGENOME > $EXPRDIR/$f+.bedgraph
+    #bedtools genomecov -bg -strand - -i $EXPRDIR/$f.bed -g $REFGENOME > $EXPRDIR/$f-.bedgraph
+    
+    sed -i "s/gi|15893298|ref|NC_003030.1|/C/g" $EXPRDIR/$f+.bedgraph
+    sed -i 's/gi|15004705|ref|NC_001988.2|/P/g' $EXPRDIR/$f+.bedgraph
+    sed -i "s/gi|15893298|ref|NC_003030.1|/C/g" $EXPRDIR/$f-.bedgraph
+    sed -i 's/gi|15004705|ref|NC_001988.2|/P/g' $EXPRDIR/$f-.bedgraph
+    cp $EXPRDIR/$f+.bedgraph $EXPRDIR/$f+log.bedgraph
+    cp $EXPRDIR/$f-.bedgraph $EXPRDIR/$f-log.bedgraph
+    ruby -n -i -e 'temp=$_.chomp.split; puts (temp[0..2].join("\t")+"\t#{Math.log10(temp[3].to_i)}")' $EXPRDIR/$f+log.bedgraph
+    ruby -n -i -e 'temp=$_.chomp.split; puts (temp[0..2].join("\t")+"\t#{Math.log10(temp[3].to_i)}")' $EXPRDIR/$f-log.bedgraph
+    OLD1="file=plot1.old"
+    OLD2="file=plot2.old"
+    TMP="file="
+    mkdir $CIRC/$f
+    cp $CIRC/*.conf $CIRC/$f/
+    TEMP=$TMP$base/$EXPRDIR/$f+log.bedgraph
+    sed -i "s|$OLD1|$TEMP|" $CIRC/$f/circos.conf
+    TEMP=$TMP$base/$EXPRDIR/$f-log.bedgraph
+    sed -i "s|$OLD2|$TEMP|" $CIRC/$f/circos.conf
+    array[$x]=$CIRC/$f/
+    let x=$x+1
+    #coverageBed -s -hist -a $EXPRDIR/$f.bed -b $ANNOTATION > $EXPRDIR/$f.counts_histogram
 done
 
 #parallel -j$CORES 'cd {}; circos; cd $base' ::: $array
 
-
+#samtools mpileup -BQ0 run.sorted.bam | perl -pe '($c, $start, undef, $depth) = split;if ($c ne $lastC || $start != $lastStart+1) {print "fixedStep chrom=$c start=$start step=1 span=1\n";}$_ = $depth."\n";($lastC, $lastStart) = ($c, $start);' | gzip -c > run.wig.gz
 
 
 

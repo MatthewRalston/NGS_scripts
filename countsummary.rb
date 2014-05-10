@@ -50,10 +50,11 @@ DIR="/home/mrals/ETP/counts"
 ################################################
 
 
-def parse(file)
-  dict={}
+def parse(file,dict)
   File.open(file,'r').each do |line|
-    dict[line.split[0]]=line.split[1] if line.include?("CA_")
+    if line.include?("CA_")
+      dict[line.split[0]] ? dict[line.split[0]]+=line.chomp.split[1].to_i : dict[line.split[0]]=line.chomp.split[1].to_i
+    end
   end
   return dict
 end
@@ -62,7 +63,8 @@ end
 def main
   dict={};new={}
   Dir.foreach(DIR) do |file|
-    dict[file[0...-9]] = parse(DIR+"/"+file) if file.include?(".counts")
+    dict[file.split(".")[0]] = {} unless dict[file.split(".")[0]]
+    dict[file.split(".")[0]] = parse(DIR+"/"+file,dict[file.split(".")[0]]) if file.include?(".counts")
   end
   conds=[]
   dict.each do |cond,dict2|
@@ -72,6 +74,7 @@ def main
       new[gene][cond]=count 
     end
   end
+  conds.shift
   new.each do |gene, counts|
     conds.each do |cond|
       new[gene][cond]="N/A" unless new[gene][cond]

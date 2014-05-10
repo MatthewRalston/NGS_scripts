@@ -5,35 +5,58 @@
 #PBS -l nodes=1:ppn=6
 #PBS -l walltime=240:00:00
 #PBS -d /home/mrals/ETP
+#------------------------------------------------
+# Title: cufflinks.sh
+#
+# Matt Ralston
+#
+# This script performs a reference transcriptome
+# assembly for each condition, which are then
+# merged into a consensus reference assembly for
+# manual curation.
+#
+#------------------------------------------------
+
 
 #set -e
 
-
-#General
-PATH=$PATH:/home/mrals/pckges/Vienna/bin:/home/mrals/home/bin/:/home/mrals/bin/
-#NGS
-PATH=$PATH:/home/mrals/pckges/sratoolkit.2.3.4-2-centos_linux64/bin/:/usr/local/bowtie-0.12.7/:/usr/local/bowtie2-2.1.0/:/usr/local/bwa-0.7.4/:/usr/local/cufflinks-2.2.0/:/usr/local/FastQC/:/usr/local/samtools-0.1.18/:/usr/local/tophat-2.0.4/:/home/mrals/pckges/seqtk-master/
-
-export PATH
-[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm"
-rvm use 2.0.0
-
-#########################     1     ##########################
-# First, several environmental variables are defined, including the name of the executables that will be called,
-# The number of processors for parallelization, the directory of input files, the directory of output files,
-# a .gtf file of sequences to omit from assembly (e.g. tRNA, rRNA), the directory of log files to describe the assembly,
-# and the reference genome and annotation to guide the assembly.
-
+#------------------------------------------------
+# Parameters
+#------------------------------------------------
+# cufflinks: this is the location of the cufflinks
+# executable
 cufflinks='/usr/local/cufflinks-2.2.0/cufflinks'
+# cuffcompare: this is the location of the cuffcompare
+# executable
 cuffcompare='/usr/local/cufflinks-2.2.0/cuffcompare'
+# cuffmerge: this is the location of the cuffmerge
+# executable
 cuffmerge='/usr/local/cufflinks-2.2.0/cuffmerge'
+# CORES: This is the number of cores available for
+# parallelization
 CORES=6
+# INDIR: This is the location of the processed
+# alignment files for transcriptome assembly.
 INDIR=SAM_processed
+# CUFFLINKS: This is the location where the 
+# assemblies will be generated
 CUFFLINKS=Cufflinks_assemblies
+# CUFFCOMPARE: This is the location where the 
+# output files from the assembly comparison will
+# be produced.
 CUFFCOMPARE=Cuffcompare
+# MASK: This is the location of a gtf annotation
+# of tRNAs and rRNAs from the C. acetobutylicum
+# genome that will be masked from assembly.
 MASK=reference/mask.gtf
+# LOGDIR: This is the location where log files will
+# be produced
 LOGDIR=logs
+# REFERENCE: This is the location of the reference
+# CDS annotation to guide the transcriptome assembly
 REFERENCE=reference/CAC.gtf
+# REFFASTA: This is the location of the reference
+# fasta file to aid transcriptome assembly.
 REFFASTA=reference/CAC.txt
 FILES=`/usr/bin/ls $INDIR/*.3.bam`
 

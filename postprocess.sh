@@ -38,11 +38,11 @@ INDIR=SAM_unprocessed
 # alignment files will be produced with the
 # suffix *.3.bam
 OUTDIR=SAM_processed
-# 
-FILES=`/usr/bin/ls $INDIR`
+# TMPD: this is a directory for temporary files
 TMPD=/home/mrals/ETP/tmp/
+# LOGDIR: this is a directory for log files to be written
 LOGDIR=logs
-REFFLAT=reference/CAC.refflat
+FILES=`/usr/bin/ls $INDIR`
 
 
 for file in $FILES
