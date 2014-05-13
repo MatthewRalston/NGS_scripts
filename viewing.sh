@@ -56,6 +56,7 @@ EXPRDIR=Expression
 CIRC=/home/mrals/ETP/circos
 # BASE: This is the home directory of the script.
 base=/home/mrals/ETP
+export base
 # PICARD: This is the location of picard jar files.
 PICARD=/usr/local/picard-tools-1.67
 # ANNOTATION: This is the location of a bed format
@@ -123,10 +124,23 @@ do
     #rm tmp/plus.bam tmp/minus.bam
     #samtools index $OUTDIR/$f.plus.bam $OUTDIR/$f.plus.bam.bai TMP_DIR=tmp
     #samtools index $OUTDIR/$f.minus.bam $OUTDIR/$f.minus.bam.bai TMP_DIR=tmp
+
+    #      P R O C E S S   B A M   F O R  C O V E R A G E
+
+
+    #          B E D G R A P H
+
     #java -jar $PICARD/MarkDuplicates.jar INPUT=$OUTDIR/$f.plus.bam OUTPUT=/dev/stdout METRICS_FILE=/dev/null REMOVE_DUPLICATES=true | samtools view -b -h -q 20 - | bedtools genomecov -bg -ibam /dev/stdin -g $REFGENOME > $EXPRDIR/$f+.bedgraph
     #java -jar $PICARD/MarkDuplicates.jar INPUT=$OUTDIR/$f.minus.bam OUTPUT=/dev/stdout METRICS_FILE=/dev/null REMOVE_DUPLICATES=true | samtools view -b -h -q 20 - | bedtools genomecov -bg -ibam /dev/stdin -g $REFGENOME > $EXPRDIR/$f-.bedgraph
+
+    #          C O V E R A G E
+
     #java -jar $PICARD/MarkDuplicates.jar INPUT=$OUTDIR/$f.plus.bam OUTPUT=/dev/stdout METRICS_FILE=/dev/null REMOVE_DUPLICATES=true | samtools view -b -h -q 20 - | bedtools genomecov -d -ibam /dev/stdin -g $REFGENOME > $EXPRDIR/$f+.cov
     #java -jar $PICARD/MarkDuplicates.jar INPUT=$OUTDIR/$f.minus.bam OUTPUT=/dev/stdout METRICS_FILE=/dev/null REMOVE_DUPLICATES=true | samtools view -b -h -q 20 - | bedtools genomecov -d -ibam /dev/stdin -g $REFGENOME > $EXPRDIR/$f-.cov
+
+    #          G E N E   C O V E R A G E
+
+
 done
 
 #################    P A R T   2   ###################
@@ -168,8 +182,10 @@ do
     let x=$x+1
     #coverageBed -s -hist -a $EXPRDIR/$f.bed -b $ANNOTATION > $EXPRDIR/$f.counts_histogram
 done
+echo 'this is the array:'
 
-#parallel -j$CORES 'cd {}; circos; cd $base' ::: $array
+parallel -j$CORES 'cd {}; circos; cd $base' ::: ${array[@]}
+
 
 #samtools mpileup -BQ0 run.sorted.bam | perl -pe '($c, $start, undef, $depth) = split;if ($c ne $lastC || $start != $lastStart+1) {print "fixedStep chrom=$c start=$start step=1 span=1\n";}$_ = $depth."\n";($lastC, $lastStart) = ($c, $start);' | gzip -c > run.wig.gz
 

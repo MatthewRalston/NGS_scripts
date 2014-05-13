@@ -61,7 +61,7 @@ def main
   INFILES.each do |file|
     dict[file[0...-4]] = parse(file)
   end
-  File.open(PWD+'/mapq_summary.txt','w') do |file|
+  File.open('/home/mrals/ETP/summary/mapq_summary.txt','w') do |file|
     file.puts(dict.keys.join("\t"))
     temp=[]
     dict.each {|key,value| temp << value.size}

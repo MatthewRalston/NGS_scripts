@@ -81,10 +81,19 @@ def main
     end
   end
 
-  File.open("countsummary.txt",'w') do |file|
-    file.puts("Gene_id\t"+new["CA_C0001"].keys.join("\t"))
+  File.open("summary/countsummary.txt",'w') do |file|
+    file.puts("Gene_id\ttreatment\ttime\treplicate\tcounts")
     new.each do |gene,counts|
-      file.puts(([gene]+counts.values).join("\t"))
+      counts.each do |cond,count|
+        file.puts("#{gene}\t#{cond}\t#{cond}\t#{cond}\t#{count}")
+      end
+    end
+  end
+  new["CA_C0001"].keys.each do |condition|
+    File.open("Expression/"+condition+".3.counts",'w') do |file|
+      new.each do |gene,counts|
+        file.puts("#{gene}\t#{counts[condition]}")
+      end
     end
   end
 end
