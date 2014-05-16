@@ -39,11 +39,17 @@ OUTPUT=$OUTDIR/processed
 FILES=(`/usr/bin/ls $INDIR`)
 # PHRED encoding/offset of input files (33 sanger etc.)
 PHRED=33
+# WINDOW:
+WINDOW=4
+# AVGQ:
+20
+# MINLEN:
+30
 
 
 for ((i=0;i<${#FILES[@]};i+=2))
 do
-	java -jar /home/mrals/pckges/Trimmomatic-0.32/trimmomatic-0.32.jar PE -threads 6 -phred33 -trimlog logs/${FILES%_*}.trimmomatic.log $INDIR/${FILES[$i]} $INDIR/${FILES[$i+1]} $OUTPUT/${FILES[$i]} $OUTPUT/${FILES[$i]}.for.unpaired.gz $OUTPUT/${FILES[$i+1]} $OUTPUT/${FILES[$i+1]}.rev.unpaired.gz ILLUMINACLIP:/home/mrals/pckges/Trimmomatic-0.32/adapters/TruSeq3-PE.fa:1:50:12:15 LEADING:5 TRAILING:5 SLIDINGWINDOW:4:15 MINLEN:30
+	java -jar /home/mrals/pckges/Trimmomatic-0.32/trimmomatic-0.32.jar PE -threads 6 -phred33 -trimlog logs/${FILES%_*}.trimmomatic.log $INDIR/${FILES[$i]} $INDIR/${FILES[$i+1]} $OUTPUT/${FILES[$i]} $OUTPUT/${FILES[$i]}.for.unpaired.gz $OUTPUT/${FILES[$i+1]} $OUTPUT/${FILES[$i+1]}.rev.unpaired.gz ILLUMINACLIP:/home/mrals/pckges/Trimmomatic-0.32/adapters/TruSeq3-PE.fa:1:40:12:15 LEADING:5 TRAILING:5 SLIDINGWINDOW:$WINDOW:$AVGQ MINLEN:$MINLEN
 	# here, the unpaired reads from the reverse strand of an unpaired read
 	# are reverse complemented, so that all unpaired reads are strand specific
 	# with respect to the forward strand.

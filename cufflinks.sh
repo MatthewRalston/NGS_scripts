@@ -66,7 +66,7 @@ for f in $FILES
 do
         f=${f##*/};f=${f%*.*.*}
 	mkdir $CUFFLINKS/$f $CUFFCOMPARE/$f
-	$cufflinks -o $CUFFLINKS/${f} -p $CORES -b $REFFASTA -u -M $MASK -m 520 -s 49 -L $f -I 1 --min-intron-length 0 --max-multiread-fraction 0.2 --overlap-radius 5 --3-overhang-tolerance 10 --library-type fr-firststrand -g $REFERENCE --3-overhang-tolerance 25 $INDIR/$f.3.bam
+	$cufflinks -o $CUFFLINKS/${f} -p $CORES -b $REFFASTA -u -M $MASK -m 520 -s 49 -L $f -I 1 --min-intron-length 0 --max-multiread-fraction 0.2 --overlap-radius 5 --3-overhang-tolerance 10 --library-type fr-firststrand -g $REFERENCE --min-frags-per-transfrag 15 --3-overhang-tolerance 25 $INDIR/$f.3.bam
 done
 
 #########################     3     ##########################

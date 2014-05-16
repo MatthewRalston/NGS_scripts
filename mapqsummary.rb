@@ -67,7 +67,7 @@ def main
     dict.each {|key,value| temp << value.size}
     temp.max.times do |x|
       temp=[]
-      dict.each {|key,value| value[x].class == NilClass ? temp << "N/A" : temp << value[x]}
+      dict.each {|key,value| value[x].class == NilClass ? temp << "NA" : temp << value[x]}
       file.puts(temp.join("\t"))
     end
   end

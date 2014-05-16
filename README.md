@@ -11,12 +11,14 @@ QC, trimming/clipping, mapping, and processing operations on a set of fastq file
 * alignmentsummary.rb
 * bedscript.rb
 * bowtie.sh
+* circos/circos.conf
 * countsummary.rb
 * cufflinks.sh
 * expression.sh
 * initialqc.sh
 * mapqsummary.rb
 * postprocess.sh
+* summary.r
 * trimfiltercheck.sh
 * viewing.sh
 
