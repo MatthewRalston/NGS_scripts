@@ -9,16 +9,18 @@ QC, trimming/clipping, mapping, and processing operations on a set of fastq file
 
 ##Contents
 * alignmentsummary.rb
+* assemblyfilter.rb
 * bedscript.rb
 * bowtie.sh
 * circos/circos.conf
 * countsummary.rb
+* coverage_calc.rb
 * cufflinks.sh
 * expression.sh
 * initialqc.sh
 * mapqsummary.rb
 * postprocess.sh
-* summary.r
+* summary/summary.r
 * trimfiltercheck.sh
 * viewing.sh
 
@@ -43,6 +45,7 @@ QC, trimming/clipping, mapping, and processing operations on a set of fastq file
    * This script performs a reference based transcriptome assembly
 9. expression.sh
    * This script calculates fpkm/geometric read counts and raw read count gene expression measurements
-
+10. summary.r
+   * This R file contains code to generate summary and diagnostic plots from the sequencing experiments.
 
 
