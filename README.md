@@ -28,24 +28,28 @@ QC, trimming/clipping, mapping, and processing operations on a set of fastq file
 
 ##Workflow
 1. initialqc.sh
-   * This script produces an initial quality check with fastqc
+   * Produces an initial quality check with fastqc
 2. trimfiltercheck.sh
-   * This script trims reads with trimmomatic and then performs a repeated quality check
+   * Trims/clips reads and additional qc.
 3. bowtie.sh
-   * This script aligns reads to the genome after in-silico rRNA removal
+   * Aligns reads to the genome after in-silico rRNA removal
 4. alignmentsummary.rb
-   * This script produces summary tables for the rRNA removal and alignment
+   * Produces summary tables for the rRNA removal and alignment
 5. postprocess.sh
-   * This script processes and checks the integrity of the alignment files
+   * Processes and verifies alignment file integrity for downstream applications
 6. viewing.sh
-   * This script produces coverage vectors, circos plots, and separates the alignments by strand
-7. mapqsummary.rb
-   * This script summarizes the (filtered) mapq qualities for each condition
-8. cufflinks.sh
-   * This script performs a reference based transcriptome assembly
-9. expression.sh
-   * This script calculates fpkm/geometric read counts and raw read count gene expression measurements
-10. summary.r
-   * This R file contains code to generate summary and diagnostic plots from the sequencing experiments.
+   * Coverage vectors, circos plots, and separates the alignments by strand
+7. bedscript.rb
+   * Processes coverage vectors to see 'fragment' coverage (vs. read)
+8. mapqsummary.rb
+   * Summarizes the (filtered) mapq qualities
+9. cufflinks.sh
+   * Reference based transcriptome assembly
+10. expression.sh
+   * Calculates fpkm/geometric read counts and raw read count gene expression measurements
+11. coverage_calc.rb
+   * Custom script: per-gene coverage vectors over the percentage of transcript length
+12. summary.r
+   * Generate summary and diagnostic plots from the sequencing experiments.
 
 
