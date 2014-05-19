@@ -4,7 +4,7 @@
 This project contains a number of BASH and ruby scripts that are used to process data
 from RNA sequencing experiments. These scripts include [Torque](http://www.adaptivecomputing.com/products/open-source/torque) headers for use on a cluster.
 These scripts perform general QC, trimming/clipping, mapping, processing, visualization, quantification, coverage-summary
-and additional summary operations on a set of fastq/BAM files. This group of file is designed
+and additional summary operations on a set of fastq/BAM files. This group of files is designed
 to be run in the sequence described below. These scripts assume that the software is installed
 and accessible in the PATH environment variable.  
 
