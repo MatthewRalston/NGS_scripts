@@ -9,18 +9,18 @@ to be run in the sequence described below. These scripts assume that the softwar
 and accessible in the PATH environment variable.  
 
 ##Dependencies
-[Ruby](https://www.ruby-lang.org/en/)
-[FastQC](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/)
-[Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic)
-[Bowtie2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml)
-[SAMtools](http://samtools.sourceforge.net/)
-[Picard](http://picard.sourceforge.net/)
-[Circos](http://circos.ca/)
-[Bedtools](http://bedtools.readthedocs.org/en/latest/)
-[Cufflinks suite](http://cufflinks.cbcb.umd.edu/)
-[HT-Seq](http://www-huber.embl.de/users/anders/HTSeq/doc/count.html)
-[R](http://www.r-project.org/)
-[Cairo Graphics](http://cran.r-project.org/web/packages/cairoDevice/)
+* [Ruby](https://www.ruby-lang.org/en/)
+* [FastQC](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/)
+* [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic)
+* [Bowtie2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml)
+* [SAMtools](http://samtools.sourceforge.net/)
+* [Picard](http://picard.sourceforge.net/)
+* [Circos](http://circos.ca/)
+* [Bedtools](http://bedtools.readthedocs.org/en/latest/)
+* [Cufflinks suite](http://cufflinks.cbcb.umd.edu/)
+* [HT-Seq](http://www-huber.embl.de/users/anders/HTSeq/doc/count.html)
+* [R](http://www.r-project.org/)
+* [Cairo Graphics](http://cran.r-project.org/web/packages/cairoDevice/)
 
 
 
