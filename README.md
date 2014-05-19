@@ -1,9 +1,26 @@
 #NGS_scripts-paired
 
 ##Description
-This project contains a number of BASH scripts that are used to process data
-from next generation sequencing experiments. These scripts perform general
-QC, trimming/clipping, mapping, and processing operations on a set of fastq files.
+This project contains a number of BASH and ruby scripts that are used to process data
+from RNA sequencing experiments. These scripts include [Torque](http://www.adaptivecomputing.com/products/open-source/torque) headers for use on a cluster.
+These scripts perform general QC, trimming/clipping, mapping, processing, visualization, quantification, coverage-summary
+and additional summary operations on a set of fastq/BAM files. This group of file is designed
+to be run in the sequence described below. These scripts assume that the software is installed
+and accessible in the PATH environment variable.  
+
+##Dependencies
+[Ruby](https://www.ruby-lang.org/en/)
+[FastQC](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/)
+[Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic)
+[Bowtie2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml)
+[SAMtools](http://samtools.sourceforge.net/)
+[Picard](http://picard.sourceforge.net/)
+[Circos](http://circos.ca/)
+[Bedtools](http://bedtools.readthedocs.org/en/latest/)
+[Cufflinks suite](http://cufflinks.cbcb.umd.edu/)
+[HT-Seq](http://www-huber.embl.de/users/anders/HTSeq/doc/count.html)
+[R](http://www.r-project.org/)
+[Cairo Graphics](http://cran.r-project.org/web/packages/cairoDevice/)
 
 
 
