@@ -24,24 +24,6 @@ and accessible in the PATH environment variable.
 
 
 
-##Contents
-* alignmentsummary.rb
-* assemblyfilter.rb
-* bedscript.rb
-* bowtie.sh
-* circos/circos.conf
-* countsummary.rb
-* coverage_calc.rb
-* cufflinks.sh
-* expression.sh
-* initialqc.sh
-* mapqsummary.rb
-* postprocess.sh
-* summary/summary.r
-* trimfiltercheck.sh
-* viewing.sh
-
-
 
 ##Workflow
 1. initialqc.sh
