@@ -4,7 +4,7 @@
 --                                                                          --
 --                                MATTHEW RALSTON                           --
 --                                                                          --
---                         M A P Q S U M M A R Y . R B                      --
+--                   A S S E M B L Y F I L T E R . R B                      --
 --                                                                          --
 ------------------------------------------------------------------------------
 -- TITLE                                                                    --
@@ -12,8 +12,9 @@
 --  Spring 2014                                                             --
 --                                                                          --
 ------------------------------------------------------------------------------
--- This file is designed to summarize mapping quality of RNA-seq alignments --
--- in a tab delimited format.						    --
+-- This file is designed to filter a Cufflinks gtf assembly to transcripts  --
+-- below a certain threshold. This script is designed with dense operons    --
+-- of bacterial genomes in mind.					    --
 --                                                                          --
 ------------------------------------------------------------------------------
 =end
@@ -35,8 +36,8 @@
 ################################################
 
 
-PWD="/home/mrals/ETP/Expression"
-INFILES=`ls #{PWD}/*.bed`.split("\n")
+CUTOFF=2000
+
 
 ################################################
 #
@@ -48,31 +49,17 @@ INFILES=`ls #{PWD}/*.bed`.split("\n")
 
 ################################################
 
-def parse(file)
-  liszt=[]
-  File.open(file,'r').each do |line|
-    liszt << line.split[-2]
-  end
-  return liszt
-end
-
-
 def main
-  dict={}
-  INFILES.each do |file|
-    dict[file[0...-4]] = parse(file)
-  end
-  File.open('/home/mrals/ETP/summary/mapq_summary.txt','w') do |file|
-    file.puts(dict.keys.join("\t"))
-    temp=[]
-    dict.each {|key,value| temp << value.size}
-    temp.max.times do |x|
-      temp=[]
-      dict.each {|key,value| value[x].class == NilClass ? temp << "NA" : temp << value[x]}
-      file.puts(temp.join("\t"))
-    end
+  while line = STDIN.gets
+    temp=line.split
+    # replace the Cufflinks gene_id with the gene_name of form CA_Nxxxx where N is the [C]hromosome or [P]lasmid
+    newline=line.split(temp[9]).join(temp[15])
+    STDOUT.puts(newline.chomp) if temp[4].to_i - temp[3].to_i <= CUTOFF and newline.include?("oId \"CA_")
   end
 end
+
+
+
 
 #*****************************************************************************#
 ################################################

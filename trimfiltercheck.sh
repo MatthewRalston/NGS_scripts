@@ -42,9 +42,9 @@ PHRED=33
 # WINDOW:
 WINDOW=4
 # AVGQ:
-20
+AVGQ=20
 # MINLEN:
-30
+MINLEN=30
 
 
 for ((i=0;i<${#FILES[@]};i+=2))
@@ -59,7 +59,7 @@ do
 		
 	fastqc -j /usr/bin/java -f fastq -o $QC/${FILES[$i]%_*} $OUTPUT/${FILES[$i]}
 	fastqc -j /usr/bin/java -f fastq -o $QC/${FILES[$i+1]%_*} $OUTPUT/${FILES[$i+1]}
-	fastqc -j /usr/bin/java -f fastq -o $QC/${FILES[$i+1]%_*}.unpaired $OUTPUT/${FILES[$i]%_*}.unpaired.gz
+	fastqc -j /usr/bin/java -f fastq -o $QC/${FILES[$i+1]%_*} $OUTPUT/${FILES[$i]%_*}.unpaired.gz
 
 
 #zcat $OUTPUT/${FILES[$i]} | fastx_quality_stats -Q $PHRED > $QC/${FILES[$i]%_*}/${FILES[$i]%.*}.fastx

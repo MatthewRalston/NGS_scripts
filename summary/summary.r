@@ -1,3 +1,16 @@
+# SUMMARY.R
+# Matt Ralston
+# Updated: 5/19/2014
+#
+# This R script contains code to generate summary and diagnostic plots
+# for RNA-seq data. Included are correlations, dispersion estimates,
+# heatmaps, per gene coverage, and much more.
+
+
+
+
+
+
 library('ggplot2')
 library('scales')
 library("edgeR")
@@ -19,7 +32,7 @@ mapq<-read.table("summary/mapq_summary.txt",header=TRUE)[,(1:5)]
 colnames(mapq)<-c("NS270A","NS30A","NS30B","NS75A","NS75B")
 mapq<-melt(as.matrix(mapq))
 p1<-ggplot(mapq)+ geom_boxplot(aes(x=Var2,y=value))
-
+ggsave("summar/mapq_boxplot.png",width=6,height=3,plot=p1)
 
 # Alignment numbers and rRNA removal
 # NOTE: rename files as NS-270-A or similar to facilitate spliting by factor
@@ -31,8 +44,11 @@ summary<-cbind(paired[,2]+unpaired[,2],paired[,2],unpaired[,2],paired[,3],unpair
 colnames(summary)<-c("Total reads","Paired reads","Unpaired reads","rRNA-free paired reads","rRNA-free unpaired reads","Total rRNA-free reads", "Total aligned reads")
 summary<-cbind(melt(summary), rep(c(0,1,1,2,2,0,0),each=5))
 colnames(summary)[3]<-"pair"
-ggplot(summary) + geom_boxplot(aes(x=variable,y=value,fill=factor(pair)))+scale_fill_manual(name="Legend",values=c("white","grey","blue"))
-
+x<-cbind(tapply(summary$value,summary$variable,mean),tapply(summary$value,summary$variable,sd),c(0,1,1,2,2,0,0))
+x<-data.frame(factor(rownames(x),as.character(rownames(x))),as.numeric(x[,1]),as.numeric(x[,2]),as.numeric(x[,3]))
+colnames(x)<-c("Class","Mean","Std.dev.","pair")
+p1<-ggplot(x,aes(x=Class,y=Mean))+geom_bar(stat="identity",aes(fill=factor(pair)))+scale_fill_manual(name="Legend",values=c("blue4","grey","darkgreen"))+theme(legend.position="none",axis.title.x=element_blank())+scale_y_continuous(breaks=(0:4)*10**7)
+ggsave("summary/alignment.png",p1)
 
 #                         A s s e m b l y    S u m m a r y
 assemblies<-read.table("summary/assemblies.size.txt")
@@ -40,8 +56,17 @@ boxplot(assemblies, ylab="Transcript size, bp")
 boxplot(assemblies[assemblies$V1 < 5000,],ylab="Transcript size, bp")
 
 
+#                       G E N E   C O V E R A G E   S U M M A R Y
+cov<-read.table("summary/NS30A+.avcov")
+colnames(cov)<-c("Gene_id",(1:100))
+# SCATTER
+ggplot(melt(cov),aes(variable,value))+geom_point(alpha=0.1)+xlab("Percentage of gene")+ylab("Coverage")+scale_x_discrete(breaks=pretty_breaks(n=10))
+# boxplot
+ggplot(melt(cov),aes(variable,value))+geom_boxplot()
 
-#                           C o v e r a g e   S u m m a r y
+
+
+#                        WHOLE   C o v e r a g e   S u m m a r y
 # This shows how to generate a plot from coverage data
 # One plot is created for each strand and plasmid
 
@@ -66,6 +91,11 @@ for (i in 1:length(files)) {
   dev.off()
   
 }
+
+
+
+
+
 
 #                         C o u n t    C o r r e l a t i o n s
 count<-read.table("countsummary.txt",header=TRUE)

@@ -4,18 +4,18 @@
 =begin
 ------------------------------------------------------------------------------
 --                                                                          --
---                                 MATTEW RALSTON                           --
+--                                MATTHEW RALSTON                           --
 --                                                                          --
 --                               B E D S C R I P T . R B                    --
 --                                                                          --
 ------------------------------------------------------------------------------
 -- TITLE                                                                    --
 --                                                                          --
---  Summer 2013                                                             --
+--  Spring 2014                                                             --
 --                                                                          --
 ------------------------------------------------------------------------------
 -- This file is designed to convert BEDPE (paired-end) bed files into BED   --
--- format file for the purpose of creating a coverage vector.
+-- format file for the purpose of creating a coverage vector.               --
 --                                                                          --
 ------------------------------------------------------------------------------
 =end
