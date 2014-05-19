@@ -1,4 +1,4 @@
-#NGS_scripts-paired
+#NGS_scripts: paired-end
 
 ##Description
 This project contains a number of BASH and ruby scripts that are used to process data
