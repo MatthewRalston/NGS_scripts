@@ -56,7 +56,7 @@
 
 def genome(liszt)
 =begin
-NSblahblahblah
+[samopen] SAM header is present: 2 sequences
 7621912 reads; of these:
   4009241 (52.60%) were paired; of these:
     1983557 (49.47%) aligned concordantly 0 times
@@ -116,15 +116,14 @@ end
 
 def unpair(liszt)
 =begin
-NSblahblahblah
 12377949 reads; of these:
   12377949 (100.00%) were unpaired; of these:
     3612671 (29.19%) aligned 0 times
     12286 (0.10%) aligned exactly 1 time
     8752992 (70.71%) aligned >1 times
 =end
-  dict={}; liszt.shift
-  dict["total"]=liszt.shift.split[0]
+  dict={};liszt.shift
+  dict["total"]=liszt.shift.split[0]; liszt.shift
   dict["unaligned"]=liszt.shift.split[0]
   dict["once"]=liszt.shift.split[0]
   dict["multiple"]=liszt.shift.split[0]
