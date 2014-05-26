@@ -13,13 +13,12 @@ library("RColorBrewer")
 library("gplots")
 require("gridExtra")
 library("reshape2")
-library("cairoDevice")
-Cairo()
+#library("cairoDevice")
+#Cairo()
 
 mydir="/home/mrals/ETP/"
-source("summary/functions.r")
 setwd(mydir)
-
+source("summary/functions.r")
 #                         A l i g n m e n t    S u m m a r y
 
 
@@ -37,7 +36,7 @@ x<-cbind(tapply(summary$value,summary$variable,mean),tapply(summary$value,summar
 x<-data.frame(factor(rownames(x),levels=rownames(x),ordered=TRUE),as.numeric(x[,1]),as.numeric(x[,2]),factor(x[,3]))
 colnames(x)<-c("Class","Mean","Std.dev.","pair")
 p1<-ggplot(x,aes(x=Class,y=Mean))+geom_bar(stat="identity",aes(fill=factor(pair)))+scale_fill_manual(name="Legend",breaks=c("Trimmed","rRNA-free"),values=c("grey34","darkgreen","blue4"))+theme(axis.title.x=element_blank())+scale_y_continuous(breaks=(0:4)*10**7)+geom_errorbar(aes(ymin=Mean-Std.dev.,ymax=Mean+Std.dev.))+annotate("text",label=c("55\u00B111%","45\u00B15%","19\u00B14%","15\u00B12%","35\u00B17%","35\u00B17%"),x=c(2:7),y=rep(2e6,6),colour=c(rep("white",5),"white"))
-ggsave("summary/images/alignment_summary.png",p1)
+ggsave("summary/images/alignment_summary.png",p1,height=4,width=10)
 # Mapping quality
 mapq<-read.table("summary/mapq_summary.txt",header=TRUE)[,(1:5)]
 colnames(mapq)<-c("NS270A","NS30A","NS30B","NS75A","NS75B")
@@ -59,56 +58,73 @@ ggsave.wide("summary/images/assembly_summary.png",p)
 
 
 #                       G E N E   C O V E R A G E   S U M M A R Y
-cov<-read.table("summary/NS30A+.avcov")
-cov<-cbind(cov,rowMeans(cov[,(2:101)]))
-covdev<-read.table("summary/NS30A+.sdcov")
-colnames(cov)<-c("Gene_id",(1:100), "Avg")
-mcov<-melt(cov)
-colnames(mcov)<-c("Gene_id","percent","avg")
+
+files<-list.files(paste(mydir,"summary/coverage",sep="/"),pattern="*.avcov",full.names=T)
+my.list<-list()
+my.frame<-data.frame()
+col<-c()
+for (i in 1:length(files)) {
+    cov<-read.table(files[i])
+    cov<-cbind(cov,rowMeans(cov[,(2:101)]))
+    #covdev<-read.table("summary/NS30A+.sdcov")
+    colnames(cov)<-c("Gene_id",(1:100), "Avg")
+    mcov<-melt(cov[,2:101])
+    colnames(mcov)<-c("percent","avg")
 # Partitions data into quartiles
-mq1<-melt(cov[cov$Avg > summary(cov$Avg)[1] & cov$Avg < summary(cov$Avg)[2],(2:101)])
-mq2<-melt(cov[cov$Avg > summary(cov$Avg)[2] & cov$Avg < summary(cov$Avg)[3],(2:101)])
-mq3<-melt(cov[cov$Avg > summary(cov$Avg)[3] & cov$Avg < summary(cov$Avg)[5],(2:101)])
-mq4<-melt(cov[cov$Avg > summary(cov$Avg)[5] & cov$Avg < summary(cov$Avg)[6],(2:101)])
-
-
-q<-data.frame((1:100),t(apply(cov[,(2:101)],2,median.quartile)))
-colnames(q)<-c("percent","second","middle","fourth")
-q1<-as.data.frame(cbind((1:100),t(apply(cov[cov$Avg > summary(cov$Avg)[1] & cov$Avg < summary(cov$Avg)[2],(2:101)],2,median.quartile))))
-q2<-as.data.frame(cbind((1:100),t(apply(cov[cov$Avg > summary(cov$Avg)[2] & cov$Avg < summary(cov$Avg)[3],(2:101)],2,median.quartile))))
-q3<-as.data.frame(cbind((1:100),t(apply(cov[cov$Avg > summary(cov$Avg)[3] & cov$Avg < summary(cov$Avg)[5],(2:101)],2,median.quartile))))
-q4<-as.data.frame(cbind((1:100),t(apply(cov[cov$Avg > summary(cov$Avg)[5] & cov$Avg < summary(cov$Avg)[6],(2:101)],2,median.quartile))))
+    mq1<-melt(cov[cov$Avg > summary(cov$Avg)[1] & cov$Avg < summary(cov$Avg)[2],(2:101)])
+    mq2<-melt(cov[cov$Avg > summary(cov$Avg)[2] & cov$Avg < summary(cov$Avg)[3],(2:101)])
+    mq3<-melt(cov[cov$Avg > summary(cov$Avg)[3] & cov$Avg < summary(cov$Avg)[5],(2:101)])
+    mq4<-melt(cov[cov$Avg > summary(cov$Avg)[5] & cov$Avg < summary(cov$Avg)[6],(2:101)])
+    
+    
+    q<-data.frame((1:100),t(apply(cov[,(2:101)],2,median.quartile)))
+    colnames(q)<-c("percent","second","middle","fourth")
+    q1<-as.data.frame(cbind((1:100),t(apply(cov[cov$Avg > summary(cov$Avg)[1] & cov$Avg < summary(cov$Avg)[2],(2:101)],2,median.quartile))))
+    q2<-as.data.frame(cbind((1:100),t(apply(cov[cov$Avg > summary(cov$Avg)[2] & cov$Avg < summary(cov$Avg)[3],(2:101)],2,median.quartile))))
+    q3<-as.data.frame(cbind((1:100),t(apply(cov[cov$Avg > summary(cov$Avg)[3] & cov$Avg < summary(cov$Avg)[5],(2:101)],2,median.quartile))))
+    q4<-as.data.frame(cbind((1:100),t(apply(cov[cov$Avg > summary(cov$Avg)[5] & cov$Avg < summary(cov$Avg)[6],(2:101)],2,median.quartile))))
 # Bar plot
-p1<-ggplot(q1,aes(x=V1,y=y))+geom_bar(stat="identity")+xlab("Percentage of gene")+ylab("Median Coverage of 1st quartile")+scale_x_discrete(breaks=pretty_breaks(n=10))
-p2<-ggplot(q2,aes(x=V1,y=y))+geom_bar(stat="identity")+xlab("Percentage of gene")+ylab("Median Coverage of 2nd quartile")+scale_x_discrete(breaks=pretty_breaks(n=10))
-p3<-ggplot(q3,aes(x=V1,y=y))+geom_bar(stat="identity")+xlab("Percentage of gene")+ylab("Median Coverage of 3rd quartile")+scale_x_discrete(breaks=pretty_breaks(n=10))
-p4<-ggplot(q4,aes(x=V1,y=y))+geom_bar(stat="identity")+xlab("Percentage of gene")+ylab("Median Coverage of 4th quartile")+scale_x_discrete(breaks=pretty_breaks(n=10))
-p<-arrangeGrob(p1,p2,p3,p4,ncol=2)
-ggsave.square(filename="summary/images/Median_cov_by_quartile.png",p)
-
-x<-as.matrix(cbind(as.numeric(mcov$variable), mcov$value))
-#hist(x[,2],n=200)
-
-
-# SCATTER
-p1<-ggplot(mcov,aes(percent,avg))+geom_point(alpha=0.2,size=1.5)+ylab("Coverage")+xlab("Percentage of gene")+scale_x_discrete(breaks=pretty_breaks(n=10))+scale_y_log10(breaks=10**(-1:4),limits=c(0.1,1e04),labels=trans_format("log10",math_format(10^.x)))+annotation_logticks(base=10,sides="l")+stat_summary(fun.y=median.quartile,geom="point",colour="darkred")
+    p1<-ggplot(q1,aes(x=V1,y=y))+geom_bar(stat="identity")+xlab("Percentage of gene")+ylab("Median Coverage of 1st quartile")+scale_x_discrete(breaks=pretty_breaks(n=10))
+    p2<-ggplot(q2,aes(x=V1,y=y))+geom_bar(stat="identity")+xlab("Percentage of gene")+ylab("Median Coverage of 2nd quartile")+scale_x_discrete(breaks=pretty_breaks(n=10))
+    p3<-ggplot(q3,aes(x=V1,y=y))+geom_bar(stat="identity")+xlab("Percentage of gene")+ylab("Median Coverage of 3rd quartile")+scale_x_discrete(breaks=pretty_breaks(n=10))
+    p4<-ggplot(q4,aes(x=V1,y=y))+geom_bar(stat="identity")+xlab("Percentage of gene")+ylab("Median Coverage of 4th quartile")+scale_x_discrete(breaks=pretty_breaks(n=10))
+    p<-arrangeGrob(p1,p2,p3,p4,ncol=2)
+    ggsave.square(filename=paste(mydir,"summary/images/Quartile_cov_",tail(strsplit(files[i],"/")[[1]],n=1),".png",sep=""),p)
+    
+    x<-as.matrix(cbind(as.numeric(mcov$variable), mcov$value))
+    #hist(x[,2],n=200)
+    
+    
+    # SCATTER
+    p1<-ggplot(mcov,aes(percent,avg))+geom_point(alpha=0.2,size=1.5)+ylab("Coverage")+xlab("Percentage of gene")+scale_x_discrete(breaks=pretty_breaks(n=10))+scale_y_log10(breaks=10**(-1:4),limits=c(0.1,1e04),labels=trans_format("log10",math_format(10^.x)))+annotation_logticks(base=10,sides="l")+stat_summary(fun.y=median.quartile,geom="point",colour="darkred")
 # Jitter
-p2<-ggplot(mcov,aes(x=percent,y=avg))+geom_jitter(alpha=0.2,size=1)+ylab("Coverage")+xlab("Percentage of gene")+scale_x_discrete(breaks=pretty_breaks(n=10))+scale_y_log10(breaks=10**(-1:4),limits=c(0.1,1e04),labels=trans_format("log10",math_format(10^.x)))+annotation_logticks(base=10,sides="l")+stat_summary(fun.y=median.quartile,geom="point",colour="red")
-
+    p2<-ggplot(mcov,aes(x=percent,y=avg))+geom_jitter(alpha=0.2,size=1)+ylab("Coverage")+xlab("Percentage of gene")+scale_x_discrete(breaks=pretty_breaks(n=10))+scale_y_log10(breaks=10**(-1:4),limits=c(0.1,1e04),labels=trans_format("log10",math_format(10^.x)))+annotation_logticks(base=10,sides="l")+stat_summary(fun.y=median.quartile,geom="point",colour="red")
+    
 # Violin plot
-p3<-ggplot(mcov,aes(percent,avg))+geom_violin(fill="grey4")+stat_summary(fun.y=median.quartile,geom='point',colour="red")+ylab("Coverage")+xlab("Percentage of gene")+scale_x_discrete(breaks=pretty_breaks(n=10))+scale_y_log10(breaks=10**(-1:4),limits=c(0.1,1e04),labels=trans_format("log10",math_format(10^.x)))+annotation_logticks(base=10,sides="l")
-ggsave("summary/images/scatter_gene.png",p1)
-ggsave("summary/images/jitter_gene.png",p2)
-ggsave("summary/images/violin_gene.png",p3)
+    p3<-ggplot(mcov,aes(percent,avg))+geom_violin(fill="grey4")+stat_summary(fun.y=median.quartile,geom='point',colour="red")+ylab("Coverage")+xlab("Percentage of gene")+scale_x_discrete(breaks=pretty_breaks(n=10))+scale_y_log10(breaks=10**(-1:4),limits=c(0.1,1e04),labels=trans_format("log10",math_format(10^.x)))+annotation_logticks(base=10,sides="l")
+    ggsave(paste("summary/images/scatter_cov",tail(strsplit(files[i],"/")[[1]],n=1),".png",sep=""),p1)
+    ggsave(paste("summary/images/jitter_cov",tail(strsplit(files[i],"/")[[1]],n=1),".png",sep=""),p2)
+    ggsave(paste("summary/images/violin_cov",tail(strsplit(files[i],"/")[[1]],n=1),".png",sep=""),p3)
                                         # Half violin
 #ggplot(data=mcov,aes(x=log10(avg)))+stat_density(aes(y=..density..))+scale_x_continuous(labels=math_format(10^.x))+facet_grid(. ~ percent)+coord_flip()
+    my.list[[i]]<-mcov
+    col[i]<-strsplit(tail(strsplit(files[i],"/")[[1]],n=1),"\\.")[[1]][1]
+}
 
+                     
+for (i in 1:length(my.list)) {
+    my.frame<-cbind.fill(my.frame,my.list[[i]]$avg)
+}
+colnames(my.frame)<-col
+mframe<-melt(my.frame)
+p1<-ggplot(mframe,aes(Var2,value))+geom_violin(fill="grey4")+stat_summary(fun.y=median.quartile,geom='point',colour="red")+ylab("Coverage")+xlab("Sample")+scale_y_log10(breaks=10**(-1:4),limits=c(0.1,1e04),labels=trans_format("log10",math_format(10^.x)))+annotation_logticks(base=10,sides="l")
+ggsave("summary/images/Violin_coverage.png",p1,width=8,height=4)
 
 #                        WHOLE   C o v e r a g e   S u m m a r y
 # This shows how to generate a plot from coverage data
 # One plot is created for each strand and plasmid
 
-system('rm coverage/*.png')
+
 files<-list.files(paste(mydir,"Expression",sep="/"),pattern="*.cov",full.names=T)
 for (i in 1:length(files)) {
   tmp<-read.table(files[i],header=FALSE)
