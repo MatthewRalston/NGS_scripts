@@ -1,5 +1,5 @@
 # SUMMARY.R
-# Matt Ralston
+# Copyright 2014 Matt Ralston
 # Updated: 5/19/2014
 #
 # This R script contains code to generate summary and diagnostic plots
@@ -35,7 +35,7 @@ summary<-melt(summary)
 x<-cbind(tapply(summary$value,summary$variable,mean),tapply(summary$value,summary$variable,sd),c("0","Trimmed","Trimmed","rRNA-free","rRNA-free","rRNA-free","0"))
 x<-data.frame(factor(rownames(x),levels=rownames(x),ordered=TRUE),as.numeric(x[,1]),as.numeric(x[,2]),factor(x[,3]))
 colnames(x)<-c("Class","Mean","Std.dev.","pair")
-p1<-ggplot(x,aes(x=Class,y=Mean))+geom_bar(stat="identity",aes(fill=factor(pair)))+scale_fill_manual(name="Legend",breaks=c("Trimmed","rRNA-free"),values=c("grey34","darkgreen","blue4"))+theme(axis.title.x=element_blank())+scale_y_continuous(breaks=(0:4)*10**7)+geom_errorbar(aes(ymin=Mean-Std.dev.,ymax=Mean+Std.dev.))+annotate("text",label=c("55\u00B111%","45\u00B15%","19\u00B14%","15\u00B12%","35\u00B17%","35\u00B17%"),x=c(2:7),y=rep(2e6,6),colour=c(rep("white",5),"white"))
+p1<-ggplot(x,aes(x=Class,y=Mean))+geom_bar(stat="identity",aes(fill=factor(pair)))+scale_fill_manual(name="Legend",breaks=c("Trimmed","rRNA-free"),values=c("grey34","darkgreen","blue4"))+theme(axis.title.x=element_blank())+scale_y_continuous(breaks=(0:4)*10**7)+geom_errorbar(aes(ymin=Mean-Std.dev.,ymax=Mean+Std.dev.))+annotate("text",label=c("55\u00B111%","45\u00B15%","19\u00B14%","15\u00B12%","35\u00B17%","35\u00B17%"),x=c(2:7),y=rep(2e6,6),colour=c(rep("white",5),"white"))+ylab("Mean Reads per Library")
 ggsave("summary/images/alignment_summary.png",p1,height=4,width=10)
 # Mapping quality
 mapq<-read.table("summary/mapq_summary.txt",header=TRUE)[,(1:5)]
@@ -50,39 +50,59 @@ ggsave("summary/images/mapq_boxplot.png",width=6,height=3,plot=p1)
 
 #                         A s s e m b l y    S u m m a r y
 assemblies<-read.table("summary/assemblies.size.txt")
-p1<-ggplot(assemblies)+geom_boxplot(aes(x=V1,y=V1))+scale_y_log10(breaks=10**(0:5),labels=trans_format("log10",math_format(10^.x)))+annotation_logticks(base=10,sides='l')+xlab("All transcripts")+ylab("Transcript length, bp")+theme(axis.ticks.x=element_blank(),axis.text.x=element_blank())
-p2<-ggplot(data.frame(V1=assemblies[assemblies$V1 < 5000,]))+geom_boxplot(aes(x=V1,y=V1))+xlab("Transcripts < 5kb (93%)")+ylab("Transcript length, bp")+theme(axis.ticks.x=element_blank(),axis.text.x=element_blank())
-p3<-ggplot(data.frame(V1=assemblies[assemblies$V1 < 2000,]))+geom_boxplot(aes(x=V1,y=V1))+xlab("Transcripts < 2kb (80%)")+ylab("Transcript length, bp")+theme(axis.ticks.x=element_blank(),axis.text.x=element_blank())
+p1<-ggplot(assemblies)+geom_histogram(aes(x=V1))+scale_x_log10(breaks=10**(-1:5),labels=trans_format("log10",math_format(10^.x)))+annotation_logticks(base=10,sides='b')+ylab("Counts")+xlab("Transcript size, bp")
+p2<-ggplot(data.frame(V1=assemblies[assemblies$V1 < 5000,]))+geom_boxplot(aes(x=V1,y=V1))+xlab("Transcripts < 5kb (93%)")+ylab("Transcript size, bp")+theme(axis.ticks.x=element_blank(),axis.text.x=element_blank())
+p3<-ggplot(data.frame(V1=assemblies[assemblies$V1 < 2000,]))+geom_boxplot(aes(x=V1,y=V1))+xlab("Transcripts < 2kb (80%)")+ylab("Transcript size, bp")+theme(axis.ticks.x=element_blank(),axis.text.x=element_blank())
 p<-arrangeGrob(p1,p2,p3,ncol=3)
 ggsave.wide("summary/images/assembly_summary.png",p)
+
+p<-ggplot(assemblies)+geom_violin(aes(x="test",y=V1))+scale_y_log10(breaks=10**(0:5),labels=trans_format("log10",math_format(10^.x)))+annotation_logticks(base=10,sides='l')
+ggsave("summary/images/assembly_violin.png",p)
 
 
 #                       G E N E   C O V E R A G E   S U M M A R Y
 
+#** Update summary.r to calculate/plot:
+#*** standard deviation of coverage per gene
+#*** coefficient of variation of coverage per gene (sigma/mu)
+#*** Plot avg coverage vs gene length
+#*** Plot coefficient of variation vs gene length
+#*** Plot avg coverage vs GC content
+#*** Plot coefficient of variation vs GC
+
+bias<-data.frame(a=numeric(),b=numeric(),c=numeric(),d=numeric())
 files<-list.files(paste(mydir,"summary/coverage",sep="/"),pattern="*.avcov",full.names=T)
 my.list<-list()
 my.frame<-data.frame()
 col<-c()
 for (i in 1:length(files)) {
-    cov<-read.table(files[i])
-    cov<-cbind(cov,rowMeans(cov[,(2:101)]))
-    #covdev<-read.table("summary/NS30A+.sdcov")
-    colnames(cov)<-c("Gene_id",(1:100), "Avg")
-    mcov<-melt(cov[,2:101])
+    cov<-read.table(files[i],header=T)
+    cov$Avg<-rowMeans(cov[,(4:103)])
+    cov$sd<-apply(cov[,(4:103)],1,sd)
+    cov$cov<-cov$Avg*cov$sd
+    colnames(cov)<-c("Gene_id","length","gc", (1:100), "Avg","sd","cov")
+    mcov<-melt(cov[,4:103])
     colnames(mcov)<-c("percent","avg")
+    # Check for correlation between Avg coverage, coefficient of variation x length, gc content
+    x<-log10(cov$Avg + 1)
+    y<-log10(cov$cov + 1)
+    z<-c(summary(lm(x~cov$length))$adj.r.squared,summary(lm(x~cov$gc))$adj.r.squared, summary(lm(y~cov$length))$adj.r.squared, summary(lm(y~cov$gc))$adj.r.squared)
+    bias<-rbind(bias,z)
+    
+    
 # Partitions data into quartiles
-    mq1<-melt(cov[cov$Avg > summary(cov$Avg)[1] & cov$Avg < summary(cov$Avg)[2],(2:101)])
-    mq2<-melt(cov[cov$Avg > summary(cov$Avg)[2] & cov$Avg < summary(cov$Avg)[3],(2:101)])
-    mq3<-melt(cov[cov$Avg > summary(cov$Avg)[3] & cov$Avg < summary(cov$Avg)[5],(2:101)])
-    mq4<-melt(cov[cov$Avg > summary(cov$Avg)[5] & cov$Avg < summary(cov$Avg)[6],(2:101)])
+    mq1<-melt(cov[cov$Avg > summary(cov$Avg)[1] & cov$Avg < summary(cov$Avg)[2],(4:103)])
+    mq2<-melt(cov[cov$Avg > summary(cov$Avg)[2] & cov$Avg < summary(cov$Avg)[3],(4:103)])
+    mq3<-melt(cov[cov$Avg > summary(cov$Avg)[3] & cov$Avg < summary(cov$Avg)[5],(4:103)])
+    mq4<-melt(cov[cov$Avg > summary(cov$Avg)[5] & cov$Avg < summary(cov$Avg)[6],(4:103)])
     
     
-    q<-data.frame((1:100),t(apply(cov[,(2:101)],2,median.quartile)))
+    q<-data.frame((1:100),t(apply(cov[,(4:103)],2,median.quartile)))
     colnames(q)<-c("percent","second","middle","fourth")
-    q1<-as.data.frame(cbind((1:100),t(apply(cov[cov$Avg > summary(cov$Avg)[1] & cov$Avg < summary(cov$Avg)[2],(2:101)],2,median.quartile))))
-    q2<-as.data.frame(cbind((1:100),t(apply(cov[cov$Avg > summary(cov$Avg)[2] & cov$Avg < summary(cov$Avg)[3],(2:101)],2,median.quartile))))
-    q3<-as.data.frame(cbind((1:100),t(apply(cov[cov$Avg > summary(cov$Avg)[3] & cov$Avg < summary(cov$Avg)[5],(2:101)],2,median.quartile))))
-    q4<-as.data.frame(cbind((1:100),t(apply(cov[cov$Avg > summary(cov$Avg)[5] & cov$Avg < summary(cov$Avg)[6],(2:101)],2,median.quartile))))
+    q1<-as.data.frame(cbind((1:100),t(apply(cov[cov$Avg > summary(cov$Avg)[1] & cov$Avg < summary(cov$Avg)[2],(4:103)],2,median.quartile))))
+    q2<-as.data.frame(cbind((1:100),t(apply(cov[cov$Avg > summary(cov$Avg)[2] & cov$Avg < summary(cov$Avg)[3],(4:103)],2,median.quartile))))
+    q3<-as.data.frame(cbind((1:100),t(apply(cov[cov$Avg > summary(cov$Avg)[3] & cov$Avg < summary(cov$Avg)[5],(4:103)],2,median.quartile))))
+    q4<-as.data.frame(cbind((1:100),t(apply(cov[cov$Avg > summary(cov$Avg)[5] & cov$Avg < summary(cov$Avg)[6],(4:103)],2,median.quartile))))
 # Bar plot
     p1<-ggplot(q1,aes(x=V1,y=y))+geom_bar(stat="identity")+xlab("Percentage of gene")+ylab("Median Coverage of 1st quartile")+scale_x_discrete(breaks=pretty_breaks(n=10))
     p2<-ggplot(q2,aes(x=V1,y=y))+geom_bar(stat="identity")+xlab("Percentage of gene")+ylab("Median Coverage of 2nd quartile")+scale_x_discrete(breaks=pretty_breaks(n=10))
@@ -110,8 +130,8 @@ for (i in 1:length(files)) {
     my.list[[i]]<-mcov
     col[i]<-strsplit(tail(strsplit(files[i],"/")[[1]],n=1),"\\.")[[1]][1]
 }
-
-                     
+colnames(bias)<-c("avg.vs.len","av.vs.gc","cov.vs.len","cov.vs.gc")
+              
 for (i in 1:length(my.list)) {
     my.frame<-cbind.fill(my.frame,my.list[[i]]$avg)
 }
@@ -207,10 +227,10 @@ cnt<-as.data.frame(counts(deseq,normalized=FALSE))
 colnames(cnt)<-c("NS30A","NS30B","NS75A","NS75B","NS270A")
 mcnt<-melt(cnt)
 # Violin1
-p1<-ggplot(mcnt)+geom_violin(aes(x=variable,y=value),trim=TRUE)+stat_summary(fun.y=median,fun.ymin=bottom.quartile,fun.ymax=top.quartile,geom='crossbar',aes(x=variable,y=value),col="red")+scale_y_log10(breaks=10**(0:4),labels=trans_format("log10",math_format(10^.x)))+annotation_logticks(base=10,sides='l')
+p1<-ggplot(mcnt)+geom_violin(aes(x=variable,y=value),trim=TRUE)+stat_summary(fun.y=median,fun.ymin=bottom.quartile,fun.ymax=top.quartile,geom='crossbar',aes(x=variable,y=value),col="red")+scale_y_log10(breaks=10**(0:4),labels=trans_format("log10",math_format(10^.x)))+annotation_logticks(base=10,sides='l')+xlab("Sample")+ylab("Counts per gene")
 ggsave("summary/images/Counts_vertical.png",p1)
 # Violin2
-p2<-ggplot(mcnt)+geom_violin(aes(x=variable,y=value),trim=TRUE)+stat_summary(fun.y=median,fun.ymin=bottom.quartile,fun.ymax=top.quartile,geom='crossbar',aes(x=variable,y=value),col="red")+scale_y_log10(breaks=10**(0:4),labels=trans_format("log10",math_format(10^.x)))+coord_flip()
+p2<-ggplot(mcnt)+geom_violin(aes(x=variable,y=value),trim=TRUE)+stat_summary(fun.y=median,fun.ymin=bottom.quartile,fun.ymax=top.quartile,geom='crossbar',aes(x=variable,y=value),col="red")+scale_y_log10(breaks=10**(0:4),labels=trans_format("log10",math_format(10^.x)))+xlab("Sample")+ylab("Counts per gene")+coord_flip()
 ggsave("summary/images/Counts_horizontal.png",p2)
                                         # Histogram
 p1<-ggplot(mcnt,aes(x=value, fill=variable))+geom_histogram(binwidth=.5,alpha=.2,position="identity")+scale_x_log10(breaks=10**(0:5),labels=trans_format("log10",math_format(10^.x)))+annotation_logticks(base=10,sides="b")+xlab(expression(paste(Log[10]," counts per gene")))+ylab("Frequency")+labs(fill="Legend")
@@ -293,13 +313,13 @@ resid<-rbind(countmodel,normmodel,regmodel)
 colnames(resid)<-c("Variable","Fitted","Residuals")
 #                 R E S I D U A L    P L O T
 # Fit becomes more homoscedastic
-p1<-ggplot(resid)+geom_point(aes(x=Fitted,y=Residuals,colour=Variable),alpha=0.7,size=2)+scale_colour_manual("Legend",values=c("Black","#56B4E9","red"),labels=c("Dispersion",expression(paste("Max.",italic(' a posteriori'))),"Model fit"))
+p1<-ggplot(resid)+geom_point(aes(x=Fitted,y=Residuals,colour=Variable),alpha=0.7,size=2)+scale_colour_manual("Legend",values=c("Black","#56B4E9","red"),labels=c("Raw counts","Normalized counts",expression(paste("Max.",italic(' a posteriori')))))
 ggsave('summary/images/Residual_plot.png',p1)
 
 #                 D I S P E R S I O N   P L O T
 mseq<-as.data.frame(mcols(deseq))
 disp<-melt(as.data.frame(mcols(deseq))[,c(1,4,9,5)],id="baseMean")
-p1<-ggplot(disp)+geom_point(aes(x=log10(baseMean),y=log10(value),colour=variable),alpha=0.7,size=2) + scale_colour_manual("Legend",values=c("black","#56B4E9","red"),labels=c("Dispersion",expression(paste("Max.",italic(' a posteriori'))),"Model fit")) + xlab(expression(paste(Log[10]," regularized expression"))) + ylab(expression(paste(Log[10]," dispersion")))+scale_x_continuous(labels=math_format(10^.x))+scale_y_continuous(labels=math_format(10^.x))+annotation_logticks(sides='b')+theme(legend.justification=c(0,0),legend.position=c(0,0))+guides(colour=guide_legend(override.aes=list(size=5)))
+p1<-ggplot(disp)+geom_point(aes(x=log10(baseMean),y=log10(value),colour=variable),alpha=0.7,size=1.5) + scale_colour_manual("Legend",values=c("black","#56B4E9","red"),labels=c("Dispersion",expression(paste("Max.",italic(' a posteriori'))),"Model fit")) + xlab(expression(paste(Log[10]," regularized expression"))) + ylab(expression(paste(Log[10]," dispersion")))+scale_x_continuous(labels=math_format(10^.x))+scale_y_continuous(breaks=(-7:2),labels=math_format(10^.x))+annotation_logticks(sides='b')+theme(legend.justification=c(0,0),legend.position=c(0,0))+guides(colour=guide_legend(override.aes=list(size=5)))
 ggsave("summary/images/Gene_dispersion.png",plot=p1,width=5,height=3)
 
 
@@ -313,10 +333,41 @@ ggsave.wide("summary/images/Volcano_plot.png",p)
 
 #      P r i n c i p a l      C o m p o n e n t      A n a l y s i s
 
-png("summary/images/PCA.png")
-plotPCA(rdeseq,intgroup=c("time"))
-dev.off()
+cormat<-cor(regcounts)
+covmat<-cov(regcounts)
+p1<-ggplot(melt(cormat))+geom_tile(aes(Var1,Var2,fill=value))
+p2<-ggplot(melt(covmat))+geom_tile(aes(Var1,Var2,fill=value))
+p<-arrangeGrob(p1,p2,ncol=2)
 
+v<-c("NS30A","NS30B","NS75A","NS75B","NS270")
+mycols<-c("#990000","#33FF66","#009933","#3300FF","#6600CC")
+corpca<-prcomp(regcounts)
+melted<-melt(corpca$rotation)
+p1<-ggplot(melted)+geom_bar(aes(x=Var1,y=value,fill=v),stat='identity')+facet_wrap(~Var2)
+scores<-data.frame(v,prcomp(cormat)$rotation)
+p1<-ggplot(scores)+geom_point(aes(x=PC1,y=PC2,colour=v),stat='identity',size=5)+scale_colour_manual("Legend",values=mycols)+geom_segment(aes(x=0,y=0,xend=PC1*0.75,yend=PC2*0.75,colour=v),arrow=arrow(length=unit(0.3,"cm")))+labs("Legend")+xlab("PC:1")+ylab("PC:2")
+p2<-ggplot(scores)+geom_point(aes(x=PC1,y=PC3,colour=v),stat='identity',size=5)+scale_colour_manual("Legend",values=mycols)+geom_segment(aes(x=0,y=0,xend=PC1*0.75,yend=PC3*0.75,colour=v),arrow=arrow(length=unit(0.3,"cm")))+labs("Legend")+xlab("PC:1")+ylab("PC:3")
+p3<-ggplot(scores)+geom_point(aes(x=PC2,y=PC3,colour=v),stat='identity',size=5)+scale_colour_manual("Legend",values=mycols)+geom_segment(aes(x=0,y=0,xend=PC2*0.75,yend=PC3*0.75,colour=v),arrow=arrow(length=unit(0.3,"cm")))+labs("Legend")+xlab("PC:2")+ylab("PC:3")
+p<-arrangeGrob(p1,p2,p3,ncol=3)
+
+require('rgl')
+y<-c(0,0,0)
+x<-scores[,2:4]
+x<-rbind(y,x[1,],y,x[2,],y,x[3,],y,x[4,],y,x[5,])
+rgl.open()
+rgl.bg(color="white")
+z<-x[1:4,]
+rgl.lines(z[,1],z[,2],z[,3],color="blue")
+z<-x[5:8,]
+rgl.lines(z[,1],z[,2],z[,3],color="green")
+z<-x[9:10,]
+rgl.lines(z[,1],z[,2],z[,3],color="red")
+n<-c(paste(rep("00",9),1:9,sep=''),paste(rep("0",89),10:99,sep=''),as.character(100:360))
+for (i in 1:360) {
+    rgl.viewpoint(i,i*(60/360), interactive=F)
+    rgl.snapshot(paste("summary/pca/file",n[i],".png",sep=""))
+}
+system('convert -delay 1 summary/pca/*.png summary/images/pca.gif')
 # Heatmap
 # select genes
 select <- order(rowMeans(counts(deseq,normalized=TRUE)),decreasing=TRUE)[1:30]

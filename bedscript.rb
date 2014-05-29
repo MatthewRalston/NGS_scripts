@@ -11,7 +11,7 @@
 ------------------------------------------------------------------------------
 -- TITLE                                                                    --
 --                                                                          --
---  Spring 2014                                                             --
+--  Copyright 2014 Matthew Ralston                                          --
 --                                                                          --
 ------------------------------------------------------------------------------
 -- This file is designed to convert BEDPE (paired-end) bed files into BED   --

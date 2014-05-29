@@ -9,7 +9,7 @@
 ------------------------------------------------------------------------------
 -- TITLE                                                                    --
 --                                                                          --
---  Spring 2014                                                             --
+--  Copyright 2014 Matthew Ralston                                          --
 --                                                                          --
 ------------------------------------------------------------------------------
 -- This file is designed to summarize mapping quality of RNA-seq alignments --

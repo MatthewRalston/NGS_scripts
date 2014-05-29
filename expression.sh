@@ -8,7 +8,7 @@
 #------------------------------------------------
 # Title: expression.sh
 #
-# Matt Ralston
+# Copyright 2014 Matt Ralston
 # 
 # This script first produces raw read counts for
 # each gene with HTSeq. Next, Cuffquant and
@@ -47,6 +47,7 @@ CUFFQUANT=Cuffquant
 # will be used to calculate gene expression.
 #REFERENCE=reference/ref.gtf
 REFERENCE=reference/CAC.gtf
+#REFERENCE=summary/summary2000.gtf
 export REFERENCE
 # MASK: This is an annotation file of genes that will
 # be omitted from normalization procedures (tRNA, rRNA)

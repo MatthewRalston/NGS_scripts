@@ -52,3 +52,6 @@ and accessible in the PATH environment variable.
    * Generate summary and diagnostic plots from the sequencing experiments.
 
 
+This is free software and relies on software which is not my own. Please see COPYING for details.
+Copyright 2014 Matthew Ralston
+

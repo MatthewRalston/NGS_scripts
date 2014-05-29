@@ -8,7 +8,7 @@
 #------------------------------------------------
 # Title: postprocess.sh
 #
-# Matt Ralston
+# Copyright 2014 Matt Ralston
 # 
 # This script performs some housekeeping
 # operations on alignment files.

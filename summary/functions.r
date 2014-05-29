@@ -1,6 +1,6 @@
 
 #                                   F U N C T I O N S
-
+# Copyright 2014 Matt Ralston
 # Function- Multiplot
 
 # Multiple plot function

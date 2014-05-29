@@ -9,7 +9,7 @@
 ------------------------------------------------------------------------------
 -- TITLE                                                                    --
 --                                                                          --
---  Spring 2014                                                             --
+--  Copyright 2014 Matthew Ralston                                          --
 --                                                                          --
 ------------------------------------------------------------------------------
 -- This script is designed to summarize the raw read counts per gene        --

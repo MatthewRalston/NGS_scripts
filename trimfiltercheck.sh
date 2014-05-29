@@ -8,7 +8,7 @@
 #------------------------------------------------
 # Title: trimfiltercheck.sh
 #
-# Matt Ralston
+# Copyright 2014 Matt Ralston
 # 
 # This script performs trimming with trimmomatic
 # and then performs a quality check with fastqc.

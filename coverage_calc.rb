@@ -9,7 +9,7 @@
 ------------------------------------------------------------------------------
 -- TITLE                                                                    --
 --                                                                          --
---  Spring 2014                                                             --
+--  Copyright 2014 Matthew Ralston                                          --
 --                                                                          --
 ------------------------------------------------------------------------------
 -- This file is designed to calculate coverage per gene, expressed as a     --
@@ -25,7 +25,7 @@
 #
 ################################################
 
-
+require 'bio'
 
 
 
@@ -38,7 +38,7 @@
 
 ANNOTATION="summary/summary2000.gtf"
 DIRECTORY="Expression"
-
+FASTA="reference/CAC.txt"
 
 ################################################
 #
@@ -59,6 +59,7 @@ def annotate
     genes[temp[9]]["start"]=temp[3].to_i
     genes[temp[9]]["end"]=temp[4].to_i
     genes[temp[9]]["strand"]=temp[6]
+    genes[temp[9]]["length"]=temp[4].to_i - 1 - temp[3].to_i
   end
   return genes
 end
@@ -71,10 +72,22 @@ def stdev(arr)
   ("%.2f" % (Math.sqrt(avg(arr.map{|x| (x-avg(arr))**2})))).to_f
 end
 
+def genefinder(c, fastas, dict)
+  gene=fastas[c][dict["start"]-1..dict["end"]]
+  gene=gene.complement if dict["strand"] == "-"
+  gene
+end
+
+def gccalc(gene)
+  gene=Hash[*gene.split("").group_by{|i| i}.map{|k,v| [k,v.count]}.flatten]
+  gene["c"] + gene["g"]
+end
+
 
 def main
   avgcov={};stdcov={}
   genes=annotate
+  fastas={};  Bio::FastaFormat.open(FASTA).each_entry {|f| fastas[f.entry_id]=Bio::Sequence::NA.new(f.seq)}; chrom,plas = fastas.keys
   Dir.glob(DIRECTORY+"/*.cov") do |file|
     # initializes the coverage array for this file
     coverage=[]; av=[];sd=[]
@@ -87,6 +100,8 @@ def main
     # iterates through each gene, testing if the strand is appropriate
     genes.each do |gene,dict|
       next if dict["strand"] != strand
+      gene.include?("CA_C") ? x=chrom : x=plas
+      gc=("%.2f" % (gccalc(genefinder(x,fastas,dict)).to_f/dict["length"]))
       # locates the coverage array index of the start and end of the gene
       min=(0...coverage.size).bsearch {|x| x >= dict["start"]}
       max=(0...coverage.size).bsearch {|x| x >= dict["end"]+1}
@@ -102,7 +117,7 @@ def main
         avcov << avg(gcov[min...max]); sdcov << stdev(gcov[min...max])
       end
       # avcov is a 100 element array : [ avg1, avg2, avg 3, ... etc ]
-      av << [gene[1...-2]] + avcov; sd << [gene[1...-2]]+ sdcov
+      av << [gene[1...-2], dict["length"], gc] + avcov; sd << [gene[1...-2]]+ sdcov
     end
     # av is a 2D array [ 
     # gene1                   [ avg1, avg2, avg 3, ... etc ]
@@ -115,14 +130,15 @@ def main
   end
   # Print results
   avgcov.each do |cond,arr|
-    File.open("summary/"+cond+".avcov",'w') do |file|
+    File.open("summary/coverage/"+cond+".avcov",'w') do |file|
+      file.puts("Gene_id\tlength\tgc\t"+(1..100).to_a.join("\t"))
       arr.each do |liszt|
         file.puts(liszt.join("\t"))
       end
     end
   end
   stdcov.each do |cond,arr|
-    File.open("summary/"+cond+".sdcov",'w') do |file|
+    File.open("summary/coverage/"+cond+".sdcov",'w') do |file|
       arr.each do |liszt|
         file.puts(liszt.join("\t"))
       end

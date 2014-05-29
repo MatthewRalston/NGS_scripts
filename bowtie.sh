@@ -9,7 +9,7 @@
 #------------------------------------------------
 # Title: bowtie.sh
 #
-# Matt Ralston
+# Copyright 2014 Matt Ralston
 # 
 # This file performs in silico ribosomal RNA 
 # removal and then performs a reference alignment

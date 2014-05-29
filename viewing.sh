@@ -8,7 +8,7 @@
 #------------------------------------------------
 # Title: viewing.sh
 #
-# Matt Ralston
+# Copyright 2014 Matt Ralston
 # 
 # This script assists in the visualization of
 # coverage and gene expression. 

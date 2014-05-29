@@ -8,7 +8,7 @@
 #------------------------------------------------
 # Title: cufflinks.sh
 #
-# Matt Ralston
+# Copyright 2014 Matt Ralston
 #
 # This script performs a reference transcriptome
 # assembly for each condition, which are then
