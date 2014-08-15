@@ -35,7 +35,7 @@ PHRED=33
 CORES=6
 # FILES: An array of the names of the files to process.
 
-FILES=`/usr/bin/ls $INDIR`
+FILES=`/usr/bin/ls $INDIR/*`
 
 
 # Pre-processing
@@ -44,7 +44,7 @@ FILES=`/usr/bin/ls $INDIR`
 parallel -j $CORES 'gunzip {}' ::: $FILES
 # Then, these files are processed, concatenating the Casava 1.8+ header
 # an compressing to the original file names
-UNZIPD=`/usr/bin/ls $INDIR`
+UNZIPD=`/usr/bin/ls $INDIR/*`
 export MOD='puts($_.chomp.split.join("_"))'
 parallel -j $CORES "cat {} | ruby -ne '$MOD' | gzip > {}.gz" ::: $UNZIPD
 # Then, the uncompressed files are removed.
