@@ -4,7 +4,7 @@
 #PBS -V
 #PBS -l nodes=1:ppn=6
 #PBS -l walltime=240:00:00
-#PBS -d /home/mrals/NichSandoval
+#PBS -d /home/mrals/Final
 #------------------------------------------------
 # Title: cufflinks.sh
 #

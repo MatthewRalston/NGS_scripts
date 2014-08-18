@@ -4,7 +4,7 @@
 #PBS -V
 #PBS -l nodes=1:ppn=4
 #PBS -l walltime=240:00:00
-#PBS -d /home/mrals/Final
+#PBS -d /home/mrals/NichSandoval
 #------------------------------------------------
 # Title: expression.sh
 #
@@ -26,9 +26,6 @@
 #------------------------------------------------
 # Parameters
 #------------------------------------------------
-# cuffdiff: This is the location of the cuffdiff
-# executable.
-cuffdiff='/usr/local/cufflinks-2.2.0/cuffdiff'
 # CORES: This is the number of processors available
 # for parallelization.
 CORES=6
@@ -40,97 +37,65 @@ INDIR=SAM_processed
 # where logs from the picard RNAseq metrics will be
 # generated
 LOGDIR=logs
-# CUFFQUANT: This is the location where Cuffquant/
-# Cuffnorm output will be produced.
-CUFFQUANT=Cuffquant
 # REFERENCE: This is the reference annotation that 
 # will be used to calculate gene expression.
-#REFERENCE=reference/ref.gtf
-REFERENCE=reference/CAC.gtf
-#REFERENCE=summary/summary2000.gtf
+REFERENCE=reference/combined.gtf
+ECOREF=reference/eco_k12_mg1655.gtf
+LPLREF=reference/Lpl.gtf
 export REFERENCE
-# MASK: This is an annotation file of genes that will
-# be omitted from normalization procedures (tRNA, rRNA)
-MASK=reference/mask.gtf
 # REFFASTA: This is a fasta format file
 # of the reference Cac genome.
-REFFASTA=reference/CAC.txt
+REFFASTA=reference/Lpl_eco
 # REFGENOME: This is a .genome file, deprecated.
 REFGENOME=reference/CAC.genome
 # EXPRDIR: This is the location where expression will be
 # generated.
 #EXPRDIR=counts
-EXPRDIR=Expression
+export EXPRDIR=Expression/counts
+export ECODIR=Expression/Eco
+export LPLDIR=Expression/Lpl
 # BAM: This is a list of the files for expression measurments
 BAM=`/usr/bin/ls $INDIR/*.3.bam`
-# NS30: This is a comma separated list of cxb cuffquant output
-# files for replicates of this condition
-NS30='Cuffquant/NS30A/abundances.cxb,Cuffquant/NS30B/abundances.cxb'
-# NS75: This is a comma separated list of cxb cuffquant output
-# files for replicates of this condition
-NS75='Cuffquant/NS75A/abundances.cxb,Cuffquant/NS75B/abundances.cxb'
-# NS270: This is a comma separated list of cxb cuffquant output
-# files for replicates of this condition
-NS270='Cuffquant/NS270A/abundances.cxb'
-# PICARD: This is the location of picard jar files, used for 
-# RNAseq metrics.
-PICARD=/usr/local/picard-tools-1.67
-export PICARD
+
 # TMPD: This is a location for temporary files.
-TMPD=/home/mrals/ETP/tmp/
+TMPD=/home/mrals/Final/tmp/
 export TMPD
 
 
 
 
-#########################     HTSeq
+#########################     HTSeq combined
 
 parallel -j$CORES 'java -jar $PICARD/MarkDuplicates.jar INPUT={} OUTPUT=/dev/stdout METRICS_FILE=/dev/null REMOVE_DUPLICATES=true | java -jar $PICARD/SortSam.jar INPUT=/dev/stdin OUTPUT=$TMPD/{/} SORT_ORDER=queryname' ::: $BAM
 BAM=`/usr/bin/ls $TMPD/*.3.bam`
 # paired
-parallel -j$CORES 'samtools view -h -f 1 {} | htseq-count -f sam -a 20 -r name -m intersection-nonempty -s yes - $REFERENCE > counts/{/.}.counts.paired' ::: $BAM
+parallel -j$CORES 'samtools view -h -f 1 {} | htseq-count -f sam -a 20 -r name -m intersection-nonempty -s yes - $REFERENCE > $EXPRDIR/{/.}.counts.paired' ::: $BAM
 # unpaired
-parallel -j$CORES 'samtools view -h -F 1 {} | htseq-count -f sam -a 20 -r name -m intersection-nonempty -s yes - $REFERENCE > counts/{/.}.counts.unpaired' ::: $BAM
-#rm $TMPD/*.3.bam
+parallel -j$CORES 'samtools view -h -F 1 {} | htseq-count -f sam -a 20 -r name -m intersection-nonempty -s yes - $REFERENCE > $EXPRDIR/{/.}.counts.unpaired' ::: $BAM
 
-./countsummary.rb
-
-
-#########################     CUFFQUANT
-
-for file in $BAM
-do
-    f=${file##*/};f=${f%*.*.*}
-    mkdir $CIRC/$f
-    mkdir $CUFFQUANT/$f
-    cuffquant -o $CUFFQUANT/$f -v -p $CORES -M $MASK -b $REFFASTA -u --library-type fr-firststrand $REFERENCE $file
-done
-
-#########################     CUFFNORM
-cuffnorm -p $CORES -o $CUFFQUANT -L NS30,NS75,NS270 --library-type fr-firststrand --library-norm-method geometric $REFERENCE $NS30 $NS75 $NS270
-mv $CUFFQUANT/genes.count_table $CUFFQUANT/genes.count_table.geometric
-cuffnorm -p $CORES -o $CUFFQUANT -L NS30,NS75,NS270 --library-type fr-firststrand --library-norm-method classic-fpkm $REFERENCE $NS30 $NS75 $NS270
-mv $CUFFQUANT/genes.count_table $CUFFQUANT/genes.count_table.fpkm
+echo /home/mrals/NichSandoval/Expression/counts | ./countsummary.rb 
 
 
+#########################     HTSeq Eco
 
 
-#########################     CUFFDIFF
-#/usr/local/cufflinks-2.2.0/cuffdiff -p $CORES -o $CUFFQUANT -T -b $REFFASTA -u -M $MASK --library-type fr-firststrand --library-norm-method geometric --min-reps-for-js-test 1 $REFERENCE $NS30 $NS75 $NS270
+# paired
+parallel -j$CORES 'samtools view -h -f 1 {} | htseq-count -f sam -a 20 -r name -m intersection-nonempty -s yes - $ECOREF > $ECODIR/{/.}.counts.paired' ::: $BAM
+# unpaired
+parallel -j$CORES 'samtools view -h -F 1 {} | htseq-count -f sam -a 20 -r name -m intersection-nonempty -s yes - $ECOREF > $ECODIR/{/.}.counts.unpaired' ::: $BAM
+
+echo /home/mrals/NichSandoval/Expression/Eco | ./countsummary.rb
 
 
+#########################     HTSeq Lpl
 
+# paired
+parallel -j$CORES 'samtools view -h -f 1 {} | htseq-count -f sam -a 20 -r name -m intersection-nonempty -s yes - $LPLREF > $LPLDIR/{/.}.counts.paired' ::: $BAM
+# unpaired
+parallel -j$CORES 'samtools view -h -F 1 {} | htseq-count -f sam -a 20 -r name -m intersection-nonempty -s yes - $LPLREF > $LPLDIR/{/.}.counts.unpaired' ::: $BAM
+rm $TMPD/*.3.bam
 
-# Additional RNAseq metrics with picard
-#gtfToGenePred -genePredExt $CUFFLINKS/merged.gtf $CUFFLINKS/tmp.refflat
-#awk 'BEGIN{FS="\t"};{print $12"\t"$1"\t"$2"\t"$3"\t"$4"\t"$5"\t"$6"\t"$7"\t"$8"\t"$9"\t"$10}' $CUFFLINKS/tmp.refflat > $CUFFLINKS/merged.refflat
-#REFFLAT=$CUFFLINKS/merged.refflat
-#ANNOTATION=/home/mrals/ETP/$CUFFLINKS/merged.gtf
-#export ANNOTATION
-#for file in $FILES
-#do
-#	java -jar $PICARD/CollectRnaSeqMetrics.jar INPUT=$file REF_FLAT=$REFFLAT TMP_DIR=$TMPD STRAND_SPECIFICITY=FIRST_READ_TRANSCRIPTION_STRAND MINIMUM_LENGTH=50 CHART_OUTPUT=$LOGDIR/${file##*/*}.RNAseq_metrics.pdf OUTPUT=$LOGDIR/${file##*/*}.RNAseq_metrics.log REFERENCE_SEQUENCE=$REFFASTA ASSUME_SORTED=true
-#done
+echo /home/mrals/NichSandoval/Expression/Lpl | ./countsummary.rb
 
 
 
