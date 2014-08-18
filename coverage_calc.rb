@@ -36,7 +36,8 @@ require 'bio'
 ################################################
 
 
-ANNOTATION="summary/summary2000.gtf"
+#ANNOTATION="summary/summary2000.gtf"
+ANNOTATION="reference/CAC.gtf"
 DIRECTORY="Expression"
 FASTA="reference/CAC.txt"
 OUTDIR="summary/coverage/"

@@ -35,7 +35,7 @@
 #
 ################################################
 
-DIR="/home/mrals/ETP/counts"
+DIR="/home/mrals/Final/Expression/counts"
 
 
 

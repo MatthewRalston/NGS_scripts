@@ -2,7 +2,7 @@
 #PBS -N trinity
 #PBS -r n
 #PBS -V
-#PBS -l nodes=1:ppn=6
+#PBS -l nodes=1:ppn=18
 #PBS -l walltime=240:00:00
 #PBS -d /home/mrals/Final
 #------------------------------------------------
@@ -28,7 +28,7 @@
 # Parameters
 #------------------------------------------------
 # CORES
-CORES=6
+CORES=18
 JM=30G
 # Trinity
 
@@ -37,10 +37,10 @@ REFGENOME=reference/CAC.txt
 #
 BAMDIR=SAM_processed
 INDIR=/home/mrals/Final/final/finalfastq
-OUTDIR=/home/mrals/Final/Trinity
-#OUTDIR=/home/mrals/Final/ggtrin
-TRIN=Trinity.fasta
-#TRIN=Trinity-GG.fasta
+OUTDIR=/home/mrals/Final/Trinity_ref
+#OUTDIR=/home/mrals/Final/Trinity_de_novo
+#TRIN=Trinity.fasta
+TRIN=Trinity-GG.fasta
 TMP=tmp
 RAWDIR=rawdata
 FILES1=`/usr/bin/ls $RAWDIR/*_1.fastq`
@@ -95,11 +95,11 @@ Trinity --left $TMP/left.fq --right $TMP/right.fq --jaccard_clip --genome $REFGE
 # This step transforms this assembly into a gtf format assembly, although the features/CDSes
 # of the traditional CAC genes are not mapped back on to these features yet...
 ##################################################
-#bwa mem -t $CORES $REFGENOME $OUTDIR/$TRIN | samtools view -Sbh - | samtools sort - $OUTDIR/Trinity
+bwa mem -t $CORES $REFGENOME $OUTDIR/$TRIN | samtools view -Sbh - | samtools sort - $OUTDIR/Trinity
 # Indexing the alignment
-#samtools index $OUTDIR/Trinity.bam
+samtools index $OUTDIR/Trinity.bam
 # Conversion to gtf, gene_ids will be Trinity transcripts, though
-#samtools view -bh $OUTDIR/Trinity.bam |  bam2bed | ruby -ne 'puts($_.split("\t")[0...6].join("\t"))' | bedToGenePred stdin stdout| genePredToGtf file stdin $OUTDIR/Trinity.gtf
+samtools view -bh $OUTDIR/Trinity.bam |  bam2bed | ruby -ne 'puts($_.split("\t")[0...6].join("\t"))' | bedToGenePred stdin stdout| genePredToGtf file stdin $OUTDIR/Trinity.gtf
 
 ##################################################
 #
@@ -112,24 +112,12 @@ Trinity --left $TMP/left.fq --right $TMP/right.fq --jaccard_clip --genome $REFGE
 
 
 
-
-
-##################################################
-#
-# Singletons
-# The resulting report ~/ETP/trinity.oXXXXX will contain the information about the singletons
-##################################################
-#bowtie2-build $OUTDIR/$TRIN Trinity
-#bowtie2 -p $CORES --fast -x Trinity --un-gz  $OUTDIR/singletons -1 left.fq -2 right.fq -S /dev/null
-#tmp=$(zcat $OUTDIR/singletons. | wc -l )
-#echo $(($tmp / 4)) > $OUTDIR/singletons.txt
-
 ##################################################
 #
 # Summary
 # 
 ##################################################
-
+#transrate
 
 
 

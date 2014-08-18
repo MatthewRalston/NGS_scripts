@@ -2,7 +2,7 @@
 #PBS -N gene_express
 #PBS -r n
 #PBS -V
-#PBS -l nodes=1:ppn=4
+#PBS -l nodes=1:ppn=6
 #PBS -l walltime=240:00:00
 #PBS -d /home/mrals/Final
 #------------------------------------------------
@@ -91,7 +91,7 @@ BAM=`/usr/bin/ls $TMPD/*.3.bam`
 parallel -j$CORES 'samtools view -h -f 1 {} | htseq-count -f sam -a 20 -r name -m intersection-nonempty -s yes - $REFERENCE > counts/{/.}.counts.paired' ::: $BAM
 # unpaired
 parallel -j$CORES 'samtools view -h -F 1 {} | htseq-count -f sam -a 20 -r name -m intersection-nonempty -s yes - $REFERENCE > counts/{/.}.counts.unpaired' ::: $BAM
-#rm $TMPD/*.3.bam
+rm $TMPD/*.3.bam
 
 ./countsummary.rb
 

@@ -2,7 +2,7 @@
 #PBS -N TFC
 #PBS -r n
 #PBS -V
-#PBS -l nodes=1:ppn=8
+#PBS -l nodes=1:ppn=12
 #PBS -l walltime=120:00:00
 #PBS -d /home/mrals/Final
 #------------------------------------------------
@@ -17,27 +17,30 @@
 #------------------------------------------------
 
 
-
+#------------------------------------------------
+# Functions
+#------------------------------------------------
+source functions.sh
 
 #------------------------------------------------
 # Parameters
 #------------------------------------------------
 
 # CORES is the number of cores for parallelization of the trimming
-CORES=8
+CORES=12
 # INDIR is the location of the unprocessed fastq
 # reads that will be trimmed.
-INDIR=rawdata
+export INDIR=rawdata
 # OUTDIR is the location where the results will
 # be deposited
 OUTDIR=processed
 mkdir $OUTDIR/fastq $OUTDIR/qc
 # QC is the location where fastqc reports will
 # be generated.
-QC=$OUTDIR/qc
+export QC=$OUTDIR/qc
 # OUTPUT is the location where final fastq files
 # will be deposited
-OUTPUT=$OUTDIR/fastq
+export OUTPUT=$OUTDIR/fastq
 FILES=(`/usr/bin/ls $INDIR`)
 # PHRED encoding/offset of input files (33 sanger etc.)
 PHRED=33
@@ -48,6 +51,16 @@ AVGQ=20
 # MINLEN:
 MINLEN=30
 
+#------------------------------------------------
+# Pre-processing
+#------------------------------------------------
+# Each file is processed, concatenating the Casava 1.8+ header
+parallel -j $CORES 'preprocess {} $INDIR' ::: $FILES
+
+#------------------------------------------------
+# Trimming
+#------------------------------------------------
+
 
 for ((i=0;i<${#FILES[@]};i+=2))
 do
@@ -56,19 +69,12 @@ do
 	# are reverse complemented, so that all unpaired reads are strand specific
 	# with respect to the forward strand.
 	gunzip -c $OUTPUT/${FILES[$i+1]}.rev.unpaired.gz | fastx_reverse_complement -Q33 | gzip > $OUTPUT/${FILES[$i+1]}.rev.gz
-	cat $OUTPUT/${FILES[$i+1]}.rev.gz $OUTPUT/${FILES[$i]}.for.unpaired.gz > $OUTPUT/${FILES[$i]%_*}.unpaired.gz
+	cat $OUTPUT/${FILES[$i+1]}.rev.gz $OUTPUT/${FILES[$i]}.for.unpaired.gz > $OUTPUT/${FILES[$i]%_*}_unpaired.gz
 	rm $OUTPUT/${FILES[$i+1]}.rev.gz $OUTPUT/${FILES[$i+1]}.rev.unpaired.gz $OUTPUT/${FILES[$i]}.for.unpaired.gz
-		
-	fastqc -j /usr/bin/java -f fastq -o $QC/${FILES[$i]%_*} $OUTPUT/${FILES[$i]}
-	fastqc -j /usr/bin/java -f fastq -o $QC/${FILES[$i+1]%_*} $OUTPUT/${FILES[$i+1]}
-	fastqc -j /usr/bin/java -f fastq -o $QC/${FILES[$i+1]%_*} $OUTPUT/${FILES[$i]%_*}.unpaired.gz
-
-
-#zcat $OUTPUT/${FILES[$i]} | fastx_quality_stats -Q $PHRED > $QC/${FILES[$i]%_*}/${FILES[$i]%.*}.fastx
-	#zcat $OUTPUT/${FILES[$i]} | prinseq -fastq stdin -stats_all > $QC/${FILES[$i]%_*}/${FILES[$i]%.*}.prinseq
-	#zcat $OUTPUT/${FILES[$i+1]} | fastx_quality_stats -Q $PHRED > $QC/${FILES[$i+1]%_*}/${FILES[$i+1]%.*}.fastx
-	#zcat $OUTPUT/${FILES[$i+1]} | prinseq -fastq stdin -stats_all > $QC/${FILES[$i+1]%_*}/${FILES[$i+1]%.*}.prinseq
 done
+
+FINALFILES=`/usr/bin/ls $OUTPUT`
+parallel -j $CORES 'quality {} $OUTPUT $QC' ::: $FINALFILES
 
 qsub bowtie.sh
 

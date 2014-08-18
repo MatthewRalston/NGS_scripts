@@ -13,12 +13,13 @@ library("RColorBrewer")
 library("gplots")
 require("gridExtra")
 library("reshape2")
+library("plotly")
 #require('rgl')
 #library("MASS")
 #library("cairoDevice")ssh
 
 #Cairo()
-
+plot.ly <- plotly(username="MatthewRalston",key="yd9yj8vmx4")
 mydir="/home/mrals/Final/"
 setwd(mydir)
 source("summary/functions.r")
@@ -64,7 +65,7 @@ test$mycolor<-factor(test$mycolor,c("Paired","Unpaired","Total"))
 
 text<-data.frame(grid=c(rep("Trimmed",4),rep("rRNA-free",6),rep("Total Aligned",2)),mycolor=c(rep(c("#003300","#0000FF"),3),"#999999","#003300","#0000FF",rep("#999999",3)), tex=c(rep("Normal",2),rep("TEX",2),rep("Normal",3),rep("TEX",3),"Normal","TEX"), value=c(4e6,0,8.5e6,1e6,1.43e6,0.9e6,6.3e6,3e6,0,10e6,1.4e6,4.5e6), lab=c("90.1%", "9.8%","84.6%","15.3%", "34.3%", "3.5%","37.8%","41%","6.8%","47.9%","39.7%", "50.2%"))
 
-p1<-ggplot(test,aes(x=tex,y=value))+geom_violin(aes(fill=mycolor,scale="width"),scale="width")+facet_grid(~grid)+theme(axis.title.x=element_blank())+scale_fill_manual(name="Legend",values=c("darkgreen","blue4","grey34"))+geom_text(data=text,aes(x=tex,y=value,label=lab,colour=mycolor,size=0.7))+scale_colour_manual(values=c("blue4","darkgreen","grey34"),guide="none")+scale_size(guide="none")+ylab("Reads per Library")+scale_y_continuous(breaks=seq(0,12,2)*10**6)
+p1<-ggplot(text,aes(x=tex,y=value))+geom_violin(aes(fill=mycolor,scale="width"),scale="width")+facet_grid(~grid)+theme(axis.title.x=element_blank())+scale_fill_manual(name="Legend",values=c("darkgreen","blue4","grey34"))+geom_text(data=text,aes(x=tex,y=value,label=lab,colour=mycolor,size=0.7))+scale_colour_manual(values=c("blue4","darkgreen","grey34"),guide="none")+scale_size(guide="none")+ylab("Reads per Library")+scale_y_continuous(breaks=seq(0,12,2)*10**6)
 
 
 
@@ -237,7 +238,7 @@ ggsave.wide("summary/images/FPKM_correlation.png",p)
 #
 ##############################################################################
 
-directory<-"Expression"
+directory<-"Expression/counts"
 sampleFiles<-list.files(paste(mydir,directory,sep="/"),pattern="*.3.counts",full.names=T)
 sampleTime<-c(270,30,30,75,75)
 sampleReplicate<-c(1,1,2,1,2)
@@ -404,7 +405,10 @@ ggsave("summary/images/COV_mean.png",p1)
 disp<-melt(as.data.frame(mcols(deseq))[,c(1,4,9,5)],id="baseMean")
 # Dispersion plot
 p1<-ggplot(disp)+geom_point(aes(x=log10(baseMean),y=log10(value),colour=variable),alpha=0.7,size=1.5) + scale_colour_manual("Legend",values=c("black","#56B4E9","red"),labels=c("Dispersion",expression(paste("Max.",italic(' a posteriori'))),"Model fit")) + xlab(expression(paste(Log[10]," regularized expression"))) + ylab(expression(paste(Log[10]," dispersion")))+scale_x_continuous(labels=math_format(10^.x))+scale_y_continuous(breaks=(-7:2),labels=math_format(10^.x))+annotation_logticks(sides='b')+theme(legend.justification=c(0,0),legend.position=c(0,0))+guides(colour=guide_legend(override.aes=list(size=5)))
+
 ggsave("summary/images/Gene_dispersion.png",plot=p1,width=5,height=3)
+p1
+response <- plotly$plotly(data
 
 
 #                             V O L C A N O    P L O T
