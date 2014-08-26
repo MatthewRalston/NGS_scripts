@@ -1,6 +1,6 @@
 # SUMMARY.R
 # Copyright 2014 Matt Ralston
-# Updated: 5/19/2014
+# Updated: 7/23/2014
 #
 # This R script contains code to generate summary and diagnostic plots
 # for RNA-seq data. Included are correlations, dispersion estimates,
@@ -16,7 +16,7 @@ library("reshape2")
 library("plotly")
 #require('rgl')
 #library("MASS")
-#library("cairoDevice")ssh
+#library("cairoDevice")
 
 #Cairo()
 plot.ly <- plotly(username="MatthewRalston",key="yd9yj8vmx4")
@@ -52,20 +52,20 @@ texsummary<-melt(texsummary)
 summary<-melt(summary)
 
 
-testsum<-data.frame(factor(c(rep("Raw reads",24),rep("Trimmed",48),rep("rRNA-free",72),rep("Total Aligned",24)),ordered=FALSE),summary$variable,c(rep("Total",24),rep("Paired",24),rep("Unpaired",24),rep("Paired",24),rep("Unpaired",24),rep("Total",48)),summary$Tex,summary$value)
+sum<-data.frame(factor(c(rep("Raw reads",24),rep("Trimmed",48),rep("rRNA-free",72),rep("Total Aligned",24)),ordered=FALSE),summary$variable,c(rep("Total",24),rep("Paired",24),rep("Unpaired",24),rep("Paired",24),rep("Unpaired",24),rep("Total",48)),summary$Tex,summary$value)
 
 texsum<-data.frame(factor(c(rep("Raw reads",6),rep("Trimmed",12),rep("rRNA-free",18),rep("Total Aligned",6)),ordered=FALSE),texsummary$variable,c(rep("Total",6),rep("Paired",6),rep("Unpaired",6),rep("Paired",6),rep("Unpaired",6),rep("Total",12)),texsummary$Tex,texsummary$value)
 x<-c("one","two","three","four","five")
-colnames(testsum)<-x
+colnames(sum)<-x
 colnames(texsum)<-x
-test<-data.frame(rbind(testsum,texsum))
+test<-data.frame(rbind(sum,texsum))
 colnames(test)<-c("grid","group","mycolor","tex","value")
 test$grid<-factor(test$grid,levels(test$grid)[c(1,4,2,3)])
 test$mycolor<-factor(test$mycolor,c("Paired","Unpaired","Total"))
 
 text<-data.frame(grid=c(rep("Trimmed",4),rep("rRNA-free",6),rep("Total Aligned",2)),mycolor=c(rep(c("#003300","#0000FF"),3),"#999999","#003300","#0000FF",rep("#999999",3)), tex=c(rep("Normal",2),rep("TEX",2),rep("Normal",3),rep("TEX",3),"Normal","TEX"), value=c(4e6,0,8.5e6,1e6,1.43e6,0.9e6,6.3e6,3e6,0,10e6,1.4e6,4.5e6), lab=c("90.1%", "9.8%","84.6%","15.3%", "34.3%", "3.5%","37.8%","41%","6.8%","47.9%","39.7%", "50.2%"))
 
-p1<-ggplot(text,aes(x=tex,y=value))+geom_violin(aes(fill=mycolor,scale="width"),scale="width")+facet_grid(~grid)+theme(axis.title.x=element_blank())+scale_fill_manual(name="Legend",values=c("darkgreen","blue4","grey34"))+geom_text(data=text,aes(x=tex,y=value,label=lab,colour=mycolor,size=0.7))+scale_colour_manual(values=c("blue4","darkgreen","grey34"),guide="none")+scale_size(guide="none")+ylab("Reads per Library")+scale_y_continuous(breaks=seq(0,12,2)*10**6)
+p1<-ggplot(test,aes(x=tex,y=value))+geom_violin(aes(fill=mycolor,scale="width"),scale="width")+facet_grid(~grid)+theme(axis.title.x=element_blank())+scale_fill_manual(name="Legend",values=c("darkgreen","blue4","grey34"))+geom_text(data=text,aes(x=tex,y=value,label=lab,colour=mycolor,size=0.7))+scale_colour_manual(values=c("blue4","darkgreen","grey34"),guide="none")+scale_size(guide="none")+ylab("Reads per Library")+scale_y_continuous(breaks=seq(0,12,2)*10**6)
 
 
 

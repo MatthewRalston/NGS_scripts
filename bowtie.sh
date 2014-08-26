@@ -2,8 +2,8 @@
 #PBS -N bwtie
 #PBS -r n
 #PBS -V
-#PBS -l nodes=1:ppn=16
-#PBS -l walltime=300:00:00
+#PBS -l nodes=1:ppn=20
+#PBS -l walltime=100:00:00
 #PBS -d /home/mrals/Final
 
 #------------------------------------------------
@@ -32,7 +32,7 @@ source functions.sh
 #------------------------------------------------
 # CORES: this is the number of processors requested
 # for this job.
-CORES=16
+CORES=20
 # INDIR: this is the directory which contains the
 # reads for rRNA removal and reference alignment.
 INDIR=processed/fastq
@@ -71,7 +71,8 @@ INTERMEDIATE=Fullsam
 # SUFFIX: this is the suffix that will be used to label the output files of
 # the reference alignment, in this case, bam.
 SUFFIX='.bam'
-FILES=(`/usr/bin/ls $INDIR`)
+FILES=(`cat filenames.txt`)
+
 # This script runs bowtie on both paired and unpaired reads, aligning them first to the 
 # rRNA sequences. After this in-silico rRNA-read removal, the remaining reads are then 
 # aligned to the genome. FastQC checks are performed on the rRNA-filtered reads.
@@ -100,9 +101,9 @@ done
 # Quality
 #------------------------------------------------
 FINALFILES=`/usr/bin/ls $FINALFASTQ`
-
-qsub postprocess.sh
 parallel -j $CORES 'quality {} $FINALFASTQ $FINALQC' ::: $FINALFILES
 
+
+qsub postprocess.sh
 
 ## EOF-------------------------------------------

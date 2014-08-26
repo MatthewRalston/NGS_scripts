@@ -2,8 +2,8 @@
 #PBS -N postprocessing
 #PBS -r n
 #PBS -V
-#PBS -l nodes=1:ppn=12
-#PBS -l walltime=240:00:00
+#PBS -l nodes=1:ppn=20
+#PBS -l walltime=48:00:00
 #PBS -d /home/mrals/Final
 #------------------------------------------------
 # Title: postprocess.sh
@@ -26,7 +26,7 @@
 # Parameters
 #------------------------------------------------
 #CORES: This is the number of processors available for parallelization
-CORES=12
+CORES=20
 # PICARD: this is the location of the jar files
 # for the picard suite
 export PICARD=/usr/local/picard-tools-1.67
@@ -52,15 +52,15 @@ function postprocess {
     ############   1   ################
     # CleanSam: Reads a SAM file, soft-clips alignments that overhang the end of the reference sequence (e.g. for circular bact. chromosomes)
     #              also, sets unmapped reads MAPQ to 0, if not already.
-    samtools view -h -q 5 -o /dev/stdout $INDIR/$file | java -jar $PICARD/CleanSam.jar INPUT=/dev/stdin OUTPUT=$OUTDIR/${file%.*}.1.sam
+    java -jar $PICARD/CleanSam.jar QUIET=true INPUT=$INDIR/$file OUTPUT=/dev/stdout > $OUTDIR/${file%.*}.1.bam
 
     # ValidateSamFile: Checks the validity of a SAM/BAM file, prints the results to cleansam.log
-    java -jar $PICARD/ValidateSamFile.jar INPUT=$OUTDIR/${file%.*}.1.sam OUTPUT=$LOGDIR/${file%.*}.1_sam_validation.log
+    samtools view -h -q 5 $OUTDIR/${file%.*}.1.bam | java -jar $PICARD/ValidateSamFile.jar INPUT=/dev/stdin OUTPUT=$LOGDIR/${file%.*}.1_sam_validation.log
 
     ############   2   ################
-    # SAM->BAM + sort: Converts SAM to BAM format and sorts, removing unmapped reads. An alternative is provided which does not filter unmapped reads.
-    samtools view -hubS $file.1.sam | samtools sort - $file.2
-    samtools view -hubS -F 4 $OUTDIR/${file%.*}.1.sam | samtools sort - $OUTDIR/${file%.*}.2
+    # Sort: 
+    samtools sort $OUTDIR/${file%.*}.1.bam $OUTDIR/${file%.*}.2
+
 
     ############   3   ################
     # MarkDuplicates: Marks duplicate reads as such in bam file, reports metrics to log file.
@@ -83,7 +83,7 @@ parallel -j $CORES 'postprocess {}' ::: $FILES
 
 
 
-#qsub trinity.sh
-
+qsub trinity.sh
+#qsub expression.sh
 
 ## EOF-------------------------------------------

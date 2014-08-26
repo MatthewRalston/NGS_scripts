@@ -2,8 +2,8 @@
 #PBS -N trinity
 #PBS -r n
 #PBS -V
-#PBS -l nodes=1:ppn=18
-#PBS -l walltime=240:00:00
+#PBS -l nodes=biohen29:ppn=20
+#PBS -l walltime=100:00:00
 #PBS -d /home/mrals/Final
 #------------------------------------------------
 # Title: trinity.sh
@@ -28,7 +28,7 @@
 # Parameters
 #------------------------------------------------
 # CORES
-CORES=18
+CORES=20
 JM=30G
 # Trinity
 
@@ -54,16 +54,11 @@ export R1 R2
 # Merge fastq files
 #
 ##################################################
-cat $INDIR/*.1.gz > $OUTDIR/t1.fq
-cat $INDIR/*.2.gz > $OUTDIR/t2.fq
-cat $INDIR/*.unpaired.gz | grep " 1:N:0" >> $OUTDIR/t1.fq
-cat $INDIR/*.unpaired.gz | grep " 2:N:0" >> $OUTDIR/t2.fq
-cat $OUTDIR/t1.fq | ruby -ne '$_[0..2] == "@HWI" ? puts("#{$_.chomp}/1") : puts($_)' >  $OUTDIR/left.fq
-cat $OUTDIR/t2.fq | ruby -ne '$_[0..2] == "@HWI" ? puts("#{$_.chomp}/2") : puts($_)' >  $OUTDIR/right.fq
-rm $OUTDIR/t1.fq $OUTDIR/t2.fq
-# NOTE Fastq files must have /1 or /2 preappendend to identifiers where appropriate
-#parallel -j $CORES "cat {} | ruby -ne '$R1' | gzip > {}.gz" ::: $FILES1
-#parallel -j $CORES "cat {} | ruby -ne '$R2' | gzip > {}.gz" ::: $FILES2
+#zcat $INDIR/*.unpaired.gz | grep " 1:N:0" | gzip >> $OUTDIR/t1.fq
+#zcat $INDIR/*.unpaired.gz | grep " 2:N:0" | gzip >> $OUTDIR/t2.fq
+#zcat $OUTDIR/t1.fq $INDIR/*.1.gz | ruby -ne '$_[0..2] == "@HWI" ? puts("#{$_.chomp}/1") : puts($_)' | gzip > $OUTDIR/left.fq.gz
+#zcat $OUTDIR/t2.fq $INDIR/*.2.gz | ruby -ne '$_[0..2] == "@HWI" ? puts("#{$_.chomp}/2") : puts($_)' | gzip > $OUTDIR/right.fq.gz
+#rm $OUTDIR/t1.fq $OUTDIR/t2.fq
 
 
 ##################################################
@@ -74,11 +69,13 @@ rm $OUTDIR/t1.fq $OUTDIR/t2.fq
 samtools merge All.merged.bam `/usr/bin/ls -d $BAMDIR/*.3.bam` 
 samtools sort -o $TMP/All.merged.bam $TMP/All.most
 # stupid b.s. to add the g.d. suffixes.
-samtools view -h $TMP/All.bam | ruby -ne '$_[0..2] == "HWI" ? puts($_.split[0]+"/"+$_.split("_")[1][0]+"\t"+$_.split[1..$_.split.size].join("\t")) : puts($_.chomp)' | samtools view -bh - $TMP/All.bam
+samtools view -h $TMP/All.most | ruby -ne '$_[0..2] == "HWI" ? puts($_.split[0]+"/"+$_.split("_")[1][0]+"\t"+$_.split[1..$_.split.size].join("\t")) : puts($_.chomp)' | samtools view -bh - $TMP/All.bam
+rm All.merged.bam
 
 
-#Trinity --genome $REFGENOME --genome_guided_use_bam $TMP/All.bam --genome_guided_max_intron 1 --genome_guided_sort_buffer 15G --genome_guided_CPU $CORES --SS_lib_type FR --seqType fq --jaccard_clip --JM $JM --CPU $CORES --output $OUTDIR --left $TMP/left.fq --right $TMP/right.fq &> $OUTDIR/ref_assembly.log
-Trinity --left $TMP/left.fq --right $TMP/right.fq --jaccard_clip --genome $REFGENOME --genome_guided_max_intron 1 --genome_guided_use_bam $TMP/FINAL.bam --JM $JM --seqType fq --output $OUTDIR --genome_guided_CPU $CORES --CPU $CORES --SS_lib_type FR
+###Trinity --genome $REFGENOME --genome_guided_use_bam $TMP/All.bam --genome_guided_max_intron 1 --genome_guided_sort_buffer 15G --genome_guided_CPU $CORES --SS_lib_type FR --seqType fq --jaccard_clip --JM $JM --CPU $CORES --output $OUTDIR --left $TMP/left.fq --right $TMP/right.fq &> $OUTDIR/ref_assembly.log
+
+#Trinity --left $TMP/left.fq --right $TMP/right.fq --jaccard_clip --genome $REFGENOME --genome_guided_max_intron 1 --genome_guided_use_bam $TMP/FINAL.bam --JM $JM --seqType fq --output $OUTDIR --genome_guided_CPU $CORES --CPU $CORES --SS_lib_type FR
 
 
 ##################################################
@@ -95,11 +92,11 @@ Trinity --left $TMP/left.fq --right $TMP/right.fq --jaccard_clip --genome $REFGE
 # This step transforms this assembly into a gtf format assembly, although the features/CDSes
 # of the traditional CAC genes are not mapped back on to these features yet...
 ##################################################
-bwa mem -t $CORES $REFGENOME $OUTDIR/$TRIN | samtools view -Sbh - | samtools sort - $OUTDIR/Trinity
+#bwa mem -t $CORES $REFGENOME $OUTDIR/$TRIN | samtools view -Sbh - | samtools sort - $OUTDIR/Trinity
 # Indexing the alignment
-samtools index $OUTDIR/Trinity.bam
+#samtools index $OUTDIR/Trinity.bam
 # Conversion to gtf, gene_ids will be Trinity transcripts, though
-samtools view -bh $OUTDIR/Trinity.bam |  bam2bed | ruby -ne 'puts($_.split("\t")[0...6].join("\t"))' | bedToGenePred stdin stdout| genePredToGtf file stdin $OUTDIR/Trinity.gtf
+#samtools view -bh $OUTDIR/Trinity.bam |  bam2bed | ruby -ne 'puts($_.split("\t")[0...6].join("\t"))' | bedToGenePred stdin stdout| genePredToGtf file stdin $OUTDIR/Trinity.gtf
 
 ##################################################
 #

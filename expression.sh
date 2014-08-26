@@ -3,7 +3,7 @@
 #PBS -r n
 #PBS -V
 #PBS -l nodes=1:ppn=6
-#PBS -l walltime=240:00:00
+#PBS -l walltime=12:00:00
 #PBS -d /home/mrals/Final
 #------------------------------------------------
 # Title: expression.sh
@@ -60,7 +60,7 @@ REFGENOME=reference/CAC.genome
 # EXPRDIR: This is the location where expression will be
 # generated.
 #EXPRDIR=counts
-EXPRDIR=Expression
+export EXPRDIR=Expression/rawcounts
 # BAM: This is a list of the files for expression measurments
 BAM=`/usr/bin/ls $INDIR/*.3.bam`
 # NS30: This is a comma separated list of cxb cuffquant output
@@ -85,13 +85,16 @@ export TMPD
 
 #########################     HTSeq
 
-parallel -j$CORES 'java -jar $PICARD/MarkDuplicates.jar INPUT={} OUTPUT=/dev/stdout METRICS_FILE=/dev/null REMOVE_DUPLICATES=true | java -jar $PICARD/SortSam.jar INPUT=/dev/stdin OUTPUT=$TMPD/{/} SORT_ORDER=queryname' ::: $BAM
+#parallel -j$CORES 'samtools view -h {} | ./unprocess.rb | samtools view -bhS - > $TMPD/{/.}.tempbam' ::: $BAM
+#TEMPBAM=`/usr/bin/ls $TMPD/*.tempbam`
+#parallel -j$CORES 'java -jar $PICARD/MarkDuplicates.jar INPUT={} OUTPUT=/dev/stdout METRICS_FILE=/dev/null REMOVE_DUPLICATES=true | samtools sort -n - $TMPD/{/.}' ::: $TEMPBAM
+#rm $TMPD/*.tempbam
 BAM=`/usr/bin/ls $TMPD/*.3.bam`
 # paired
-parallel -j$CORES 'samtools view -h -f 1 {} | htseq-count -f sam -a 20 -r name -m intersection-nonempty -s yes - $REFERENCE > counts/{/.}.counts.paired' ::: $BAM
+parallel -j$CORES 'samtools view -h -f 1 {} | htseq-count -f sam -a 20 -r name -m intersection-nonempty -s yes - $REFERENCE > $EXPRDIR/{/.}.counts.paired' ::: $BAM
 # unpaired
-parallel -j$CORES 'samtools view -h -F 1 {} | htseq-count -f sam -a 20 -r name -m intersection-nonempty -s yes - $REFERENCE > counts/{/.}.counts.unpaired' ::: $BAM
-rm $TMPD/*.3.bam
+parallel -j$CORES 'samtools view -h -F 1 {} | htseq-count -f sam -a 20 -r name -m intersection-nonempty -s yes - $REFERENCE > $EXPRDIR/{/.}.counts.unpaired' ::: $BAM
+#rm $TMPD/*.3.bam
 
 ./countsummary.rb
 
@@ -101,16 +104,16 @@ rm $TMPD/*.3.bam
 for file in $BAM
 do
     f=${file##*/};f=${f%*.*.*}
-    mkdir $CIRC/$f
-    mkdir $CUFFQUANT/$f
-    cuffquant -o $CUFFQUANT/$f -v -p $CORES -M $MASK -b $REFFASTA -u --library-type fr-firststrand $REFERENCE $file
+    #mkdir $CIRC/$f
+    #mkdir $CUFFQUANT/$f
+    #cuffquant -o $CUFFQUANT/$f -v -p $CORES -M $MASK -b $REFFASTA -u --library-type fr-firststrand $REFERENCE $file
 done
 
 #########################     CUFFNORM
-cuffnorm -p $CORES -o $CUFFQUANT -L NS30,NS75,NS270 --library-type fr-firststrand --library-norm-method geometric $REFERENCE $NS30 $NS75 $NS270
-mv $CUFFQUANT/genes.count_table $CUFFQUANT/genes.count_table.geometric
-cuffnorm -p $CORES -o $CUFFQUANT -L NS30,NS75,NS270 --library-type fr-firststrand --library-norm-method classic-fpkm $REFERENCE $NS30 $NS75 $NS270
-mv $CUFFQUANT/genes.count_table $CUFFQUANT/genes.count_table.fpkm
+#cuffnorm -p $CORES -o $CUFFQUANT -L NS30,NS75,NS270 --library-type fr-firststrand --library-norm-method geometric $REFERENCE $NS30 $NS75 $NS270
+#mv $CUFFQUANT/genes.count_table $CUFFQUANT/genes.count_table.geometric
+#cuffnorm -p $CORES -o $CUFFQUANT -L NS30,NS75,NS270 --library-type fr-firststrand --library-norm-method classic-fpkm $REFERENCE $NS30 $NS75 $NS270
+#mv $CUFFQUANT/genes.count_table $CUFFQUANT/genes.count_table.fpkm
 
 
 
@@ -132,7 +135,11 @@ mv $CUFFQUANT/genes.count_table $CUFFQUANT/genes.count_table.fpkm
 #	java -jar $PICARD/CollectRnaSeqMetrics.jar INPUT=$file REF_FLAT=$REFFLAT TMP_DIR=$TMPD STRAND_SPECIFICITY=FIRST_READ_TRANSCRIPTION_STRAND MINIMUM_LENGTH=50 CHART_OUTPUT=$LOGDIR/${file##*/*}.RNAseq_metrics.pdf OUTPUT=$LOGDIR/${file##*/*}.RNAseq_metrics.log REFERENCE_SEQUENCE=$REFFASTA ASSUME_SORTED=true
 #done
 
-
+#########################     Expression ratios of counts
+# Here the counts are calculated as expression ratios
+# log2(ratio) = log2 ( gene-a-t1 / gene-a-t2 )
+# INDIR = Expression/counts
+# OUTDIR = circos/data/DE_BuOH-30_0.txt
 
 
 ## EOF-------------------------------------------

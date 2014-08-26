@@ -143,7 +143,7 @@ def main
   begin
 
     while line=STDIN.gets
-      #puts(line)
+      puts(line)
       if line.include?("overall alignment rate") and x ==2
         alignment << line.split("%")[0]
         x=0
@@ -169,7 +169,6 @@ def main
    printer(paired,"summary-paired.txt")
    printer(unpaired,"summary-unpaired.txt")
    printer(total,"summary-alignment.txt")
-  rescue NoMethodError
   end
   
 end
