@@ -2,8 +2,8 @@
 #PBS -N postprocessing
 #PBS -r n
 #PBS -V
-#PBS -l nodes=1:ppn=12
-#PBS -l walltime=240:00:00
+#PBS -l nodes=1:ppn=6
+#PBS -l walltime=24:00:00
 #PBS -d /home/mrals/NichSandoval
 #------------------------------------------------
 # Title: postprocess.sh
@@ -26,13 +26,13 @@
 # Parameters
 #------------------------------------------------
 #CORES: This is the number of processors available for parallelization
-CORES=12
+CORES=6
 # PICARD: this is the location of the jar files
 # for the picard suite
 export PICARD=/usr/local/picard-tools-1.67
 # REFERENCE: this is the fasta file of the
 # C. ac. genome for InsertSizeMetrics
-export REFERENCE=reference/CAC.txt
+export REFERENCE=reference/Lpl_eco_fos.fa
 # INDIR: this is the location of the unprocessed
 # alignment files.
 export INDIR=SAM_unprocessed
@@ -59,12 +59,12 @@ function postprocess {
 
     ############   2   ################
     # SAM->BAM + sort: Converts SAM to BAM format and sorts, removing unmapped reads. An alternative is provided which does not filter unmapped reads.
-    samtools view -hubS $file.1.sam | samtools sort - $file.2
-    samtools view -hubS -F 4 $OUTDIR/${file%.*}.1.sam | samtools sort - $OUTDIR/${file%.*}.2
+    samtools view -huS $OUTDIR/${file%.*}.1.sam | samtools sort - $OUTDIR/${file%.*}.2
+    #samtools view -huS -F 4 $OUTDIR/${file%.*}.1.sam | samtools sort - $OUTDIR/${file%.*}.2
 
     ############   3   ################
     # MarkDuplicates: Marks duplicate reads as such in bam file, reports metrics to log file.
-    java -jar $PICARD/MarkDuplicates.jar INPUT=$OUTDIR/${file%.*}.2.bam METRICS_FILE=$LOGDIR/${file%.*}.2.duplication.log OUTPUT=$OUTDIR/${file%.*}.3.bam ASSUME_SORTED=true TMP_DIR=$TMPD
+    java -jar $PICARD/MarkDuplicates.jar INPUT=$OUTDIR/${file%.*}.2.bam METRICS_FILE=$LOGDIR/${file%.*}.2.duplication.log OUTPUT=$OUTDIR/${file%.*}.3.bam REMOVE_DUPLICATES=false ASSUME_SORTED=true TMP_DIR=$TMPD
 
     # CollectAlignmentSummaryMetrics
     java -jar $PICARD/CollectAlignmentSummaryMetrics.jar INPUT=$OUTDIR/${file%.*}.3.bam OUTPUT=$LOGDIR/${file%.*}.3.summary.log REFERENCE_SEQUENCE=$REFERENCE ASSUME_SORTED=true TMP_DIR=$TMPD
@@ -83,7 +83,7 @@ parallel -j $CORES 'postprocess {}' ::: $FILES
 
 
 
-#qsub trinity.sh
+qsub expression.sh
 
 
 ## EOF-------------------------------------------

@@ -38,7 +38,7 @@
 #
 ################################################
 
-DIR=STDIN.gets
+DIR=STDIN.gets.chomp
 
 
 
@@ -85,16 +85,18 @@ def main
     end
   end
 
-  File.open(DIR+"/countsummary.txt",'w') do |file|
-    file.puts("Gene_id\ttreatment\ttime\treplicate\tcounts")
+  File.open("Expression/"+DIR.split("/")[-1]+"/countsummary.txt",'w') do |file|
+    file.puts((["Gene_id"]+conds).join("\t"))
     new.each do |gene,counts|
-      counts.each do |cond,count|
-        file.puts("#{gene}\t#{cond}\t#{cond}\t#{cond}\t#{count}")
+      liszt=[gene]
+      conds.each do |cond|
+        liszt << counts[cond]
       end
+      file.puts(liszt.join("\t"))
     end
   end
-  new["CA_C0001"].keys.each do |condition|
-    File.open(DIR+"/"+condition+".3.counts",'w') do |file|
+  new[new.keys[0]].keys.each do |condition|
+    File.open("Expression/"+DIR.split("/")[-1]+"/"+condition+".counts.txt",'w') do |file|
       new.each do |gene,counts|
         file.puts("#{gene}\t#{counts[condition]}")
       end

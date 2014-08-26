@@ -2,7 +2,7 @@
 #PBS -N bwtie
 #PBS -r n
 #PBS -V
-#PBS -l nodes=1:ppn=8
+#PBS -l nodes=1:ppn=6
 #PBS -l walltime=300:00:00
 #PBS -d /home/mrals/NichSandoval
 
@@ -47,7 +47,7 @@ export FINALFASTQ=final/finalfastq
 export FINALQC=final/finalqc
 # BT2BASE: This is the prefix of the bowtie2 indexes
 # that will be used for the reference alignement
-BT2BASE=Lpl_eco
+BT2BASE=Lpl_eco_fos
 # CHROMOSOMES: these are files of fasta sequences that can
 # be used to build bowtie2 indexes, if necessary
 #CHROMOSOMES='CAC.fa, CAP.fa'
@@ -58,7 +58,7 @@ BT2BASE=Lpl_eco
 REFERENCE=reference/$BT2BASE
 # rRNA: this is the location of the ribosomal RNA indexes
 # that will be used to perform the in silico rRNA removal.
-rRNA=reference/rRNA
+rRNA=reference/eco-rrna
 # FILTER: This is a gtf format of the rRNA sequences
 FILTER=reference/mask.gtf
 # CONTAM: Store rRNA alignments
