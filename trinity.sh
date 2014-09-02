@@ -3,7 +3,7 @@
 #PBS -r n
 #PBS -V
 #PBS -l nodes=biohen29:ppn=20
-#PBS -l walltime=100:00:00
+#PBS -l walltime=24:00:00
 #PBS -d /home/mrals/Final
 #------------------------------------------------
 # Title: trinity.sh
@@ -22,7 +22,7 @@
 #------------------------------------------------
 
 
-#set -e
+set -e
 
 #------------------------------------------------
 # Parameters
@@ -43,8 +43,8 @@ OUTDIR=/home/mrals/Final/Trinity_ref
 TRIN=Trinity-GG.fasta
 TMP=tmp
 RAWDIR=rawdata
-FILES1=`/usr/bin/ls $RAWDIR/*_1.fastq`
-FILES2=`/usr/bin/ls $RAWDIR/*_2.fastq`
+FILES1=`/usr/bin/ls $RAWDIR/*_1.fastq.gz`
+FILES2=`/usr/bin/ls $RAWDIR/*_2.fastq.gz`
 R1='$_[0..3] == "@HWI" ? puts("#{$_.chomp/1") : puts($_.chomp)'
 R2='$_[0..3] == "@HWI" ? puts("#{$_.chomp/2") : puts($_.chomp)'
 export R1 R2
@@ -66,16 +66,16 @@ export R1 R2
 # OPTIONAL-- Reference Trinity
 # Use BAM files (instead of fastq files
 ##################################################
-samtools merge All.merged.bam `/usr/bin/ls -d $BAMDIR/*.3.bam` 
-samtools sort -o $TMP/All.merged.bam $TMP/All.most
+samtools merge $TMP/All.merged.bam `/usr/bin/ls -d $BAMDIR/*.3.bam` 
+samtools sort -o $TMP/All.merged.bam $TMP/All.most > $TMP/All.most.bam
+rm $TMP/All.merged.bam
 # stupid b.s. to add the g.d. suffixes.
-samtools view -h $TMP/All.most | ruby -ne '$_[0..2] == "HWI" ? puts($_.split[0]+"/"+$_.split("_")[1][0]+"\t"+$_.split[1..$_.split.size].join("\t")) : puts($_.chomp)' | samtools view -bh - $TMP/All.bam
-rm All.merged.bam
+samtools view -h $TMP/All.most.bam | ruby -ne '$_[0..2] == "HWI" ? puts($_.split[0]+"/"+$_.split("_")[1][0]+"\t"+$_.split[1..$_.split.size].join("\t")) : puts($_.chomp)' | ruby -ne '$_[0..2] == "HWI" ? (  l=$_.split("\t"); l[1].to_i%2 == 1 ? puts(l.join("\t")) : puts( ([l[0]]+[(l[1].to_i+1).to_s]+l[2..l.size]).join("\t") )  ) : puts($_.chomp)' | samtools view -hbS - > $OUTDIR/All.bam
 
 
 ###Trinity --genome $REFGENOME --genome_guided_use_bam $TMP/All.bam --genome_guided_max_intron 1 --genome_guided_sort_buffer 15G --genome_guided_CPU $CORES --SS_lib_type FR --seqType fq --jaccard_clip --JM $JM --CPU $CORES --output $OUTDIR --left $TMP/left.fq --right $TMP/right.fq &> $OUTDIR/ref_assembly.log
 
-#Trinity --left $TMP/left.fq --right $TMP/right.fq --jaccard_clip --genome $REFGENOME --genome_guided_max_intron 1 --genome_guided_use_bam $TMP/FINAL.bam --JM $JM --seqType fq --output $OUTDIR --genome_guided_CPU $CORES --CPU $CORES --SS_lib_type FR
+#Trinity --left $OUTDIR/left.fq.gz --right $OUTDIR/right.fq.gz --jaccard_clip --genome $REFGENOME --genome_guided_max_intron 1 --genome_guided_use_bam $OUTDIR/All.bam --JM $JM --seqType fq --output $OUTDIR --genome_guided_CPU $CORES --CPU $CORES --SS_lib_type FR
 
 
 ##################################################

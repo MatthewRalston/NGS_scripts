@@ -12,7 +12,7 @@ library('RColorBrewer')
 library('reshape2')
 library('cairoDevice')
 library('gridExtra')
-
+options(max.print=1000)
 
 
 Cairo()
@@ -26,13 +26,13 @@ source("summary/functions.r")
 #################################################################
 directory<-"Expression/counts"
 sampleFiles<-list.files(paste(mydir,directory,sep="/"),pattern="*.counts.txt",full.names=T)
-sampleTime<-rep(c(150,15,270,270,75,75,150,15,270,75),3)
+sampleTime<-factor(rep(c(150,15,270,270,75,75,150,15,270,75),3))
 sampleRep<-rep(c(rep("A",6),rep("B",4)),3)
 sampleCond<-c(rep("BA",10),rep("BuOH",10),rep("NS",10))
 sampleTex<-rep(c(rep("Normal",3),"TEX","Normal","TEX",rep("Normal",4)),3)
 sampleNames<-gsub("-","_",unlist(lapply(strsplit(unlist(lapply(strsplit(sampleFiles,"/"),"[[",7)),"\\."),"[[",1)))
 samples<-data.frame(sampleName=sampleNames,fileName=sampleFiles,cond=sampleCond,time=sampleTime,replicate=sampleRep,tex=sampleTex)
-htseq<-DESeqDataSetFromHTSeqCount(sampleTable=samples,directory='',design= ~ cond + time + replicate + tex)
+htseq<-DESeqDataSetFromHTSeqCount(sampleTable=samples,directory='',design= ~ replicate + tex + time + cond + time:cond)
 
 deseq<-DESeq(htseq)
 rdeseq<-rlogTransformation(deseq,blind=TRUE)
@@ -43,5 +43,18 @@ regcounts<-as.data.frame(assay(rdeseq))
 #            Exploratory plots
 #################################################################
 mraw<-melt(rawcounts);mnorm<-melt(normcounts);mreg<-melt(regcounts);
+# Correlations [raw, normalized, regularized]
 source("summary/correlation.r")
+# Jitter plots showing normalization
+p1<-ggplot(melt(rawcounts[,c(21,26,22,24)]+1),aes(x=variable,y=value))+geom_jitter()+scale_y_log10(breaks=10**(0:4),labels=trans_format('log10',math_format(10^.x)))+annotation_logticks(base=10,sides='l')+stat_summary(fun.y=median,fun.ymax=top.quartile,fun.ymin=bottom.quartile,geom='crossbar',colour='red')+ylab('Counts')+theme(axis.title.x=element_blank())+ggtitle("Raw Counts")
+p2<-ggplot(melt(normcounts[,c(21,26,22,24)]+1),aes(x=variable,y=value))+geom_jitter()+scale_y_log10(breaks=10**(0:4),labels=trans_format('log10',math_format(10^.x)))+annotation_logticks(base=10,sides='l')+stat_summary(fun.y=median,fun.ymax=top.quartile,fun.ymin=bottom.quartile,geom='crossbar',colour='red')+ylab('Normalized Counts')+theme(axis.title.x=element_blank())+ggtitle("Normalized Counts")
+p<-arrangeGrob(p1,p2,ncol=2)
+ggsave("summary/images/normalization.png",p)
 
+# MA-plots
+source("summary/ma-plots.r")
+# Variance vs. expression level trend, Residual plot, dispersion
+source("summary/regularization.r")
+# PCA
+source("summary/pca.r")
+# GO analysis

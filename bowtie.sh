@@ -100,7 +100,7 @@ done
 #------------------------------------------------
 # Quality
 #------------------------------------------------
-FINALFILES=`/usr/bin/ls $FINALFASTQ`
+FINALFILES=`cat finalfiles.txt`
 parallel -j $CORES 'quality {} $FINALFASTQ $FINALQC' ::: $FINALFILES
 
 

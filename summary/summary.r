@@ -18,6 +18,7 @@ library("plotly")
 #library("MASS")
 #library("cairoDevice")
 
+options(max.print=1000)
 #Cairo()
 plot.ly <- plotly(username="MatthewRalston",key="yd9yj8vmx4")
 mydir="/home/mrals/Final/"
@@ -28,48 +29,11 @@ colnum=10
 rownum=10
 #                         A l i g n m e n t    S u m m a r y
 
-
-# Alignment numbers and rRNA removal
-# NOTE: rename files as NS-270-A or similar to facilitate spliting by factor
-talign<-read.table("summary-alignment.txt",header=TRUE,sep="\t")
-align<-talign[!grepl("TEX",talign$ID),]
-texalign<-talign[grepl("TEX",talign$ID),]
-align$totalaligned <- align$conc_once + align$conc_mult + align$disc_once + align$mate_once + align$mate_mult + align$unpair_once + align$unpair_mult
-texalign$totalaligned <- texalign$conc_once + texalign$conc_mult + texalign$disc_once + texalign$mate_once + texalign$mate_mult + texalign$unpair_once + texalign$unpair_mult
-tpaired<-read.table("summary-paired.txt",header=TRUE,sep="\t")
-paired<-tpaired[!grepl("TEX",tpaired$ID),]
-texpaired<-tpaired[grepl("TEX",tpaired$ID),]
-tunpaired<-read.table("summary-unpaired.txt",header=TRUE,sep="\t")
-unpaired<-tunpaired[!grepl("TEX",tunpaired$ID),]
-texunpaired<-tunpaired[grepl("TEX",tunpaired$ID),]
-
-summary<-cbind(paired[,2]+unpaired[,2],paired[,2],unpaired[,2],paired[,3],unpaired[,3],align[,c(2,16)],rep("Normal",length(paired[,2])))
-colnames(summary)<-c("Total","Trimmed Paired","Trimmed Unpaired","Paired","Unpaired","rRNA-free", "Aligned","Tex")
-
-texsummary<-cbind(texpaired[,2]+texunpaired[,2],texpaired[,2],texunpaired[,2],texpaired[,3],texunpaired[,3],texalign[,c(2,16)],rep("TEX",length(texpaired[,2])))
-colnames(texsummary)<-c("Total","Trimmed Paired","Trimmed Unpaired","Paired","Unpaired","rRNA-free", "Aligned","Tex")
-texsummary<-melt(texsummary)
-summary<-melt(summary)
-
-
-sum<-data.frame(factor(c(rep("Raw reads",24),rep("Trimmed",48),rep("rRNA-free",72),rep("Total Aligned",24)),ordered=FALSE),summary$variable,c(rep("Total",24),rep("Paired",24),rep("Unpaired",24),rep("Paired",24),rep("Unpaired",24),rep("Total",48)),summary$Tex,summary$value)
-
-texsum<-data.frame(factor(c(rep("Raw reads",6),rep("Trimmed",12),rep("rRNA-free",18),rep("Total Aligned",6)),ordered=FALSE),texsummary$variable,c(rep("Total",6),rep("Paired",6),rep("Unpaired",6),rep("Paired",6),rep("Unpaired",6),rep("Total",12)),texsummary$Tex,texsummary$value)
-x<-c("one","two","three","four","five")
-colnames(sum)<-x
-colnames(texsum)<-x
-test<-data.frame(rbind(sum,texsum))
-colnames(test)<-c("grid","group","mycolor","tex","value")
-test$grid<-factor(test$grid,levels(test$grid)[c(1,4,2,3)])
-test$mycolor<-factor(test$mycolor,c("Paired","Unpaired","Total"))
-
-text<-data.frame(grid=c(rep("Trimmed",4),rep("rRNA-free",6),rep("Total Aligned",2)),mycolor=c(rep(c("#003300","#0000FF"),3),"#999999","#003300","#0000FF",rep("#999999",3)), tex=c(rep("Normal",2),rep("TEX",2),rep("Normal",3),rep("TEX",3),"Normal","TEX"), value=c(4e6,0,8.5e6,1e6,1.43e6,0.9e6,6.3e6,3e6,0,10e6,1.4e6,4.5e6), lab=c("90.1%", "9.8%","84.6%","15.3%", "34.3%", "3.5%","37.8%","41%","6.8%","47.9%","39.7%", "50.2%"))
-
-p1<-ggplot(test,aes(x=tex,y=value))+geom_violin(aes(fill=mycolor,scale="width"),scale="width")+facet_grid(~grid)+theme(axis.title.x=element_blank())+scale_fill_manual(name="Legend",values=c("darkgreen","blue4","grey34"))+geom_text(data=text,aes(x=tex,y=value,label=lab,colour=mycolor,size=0.7))+scale_colour_manual(values=c("blue4","darkgreen","grey34"),guide="none")+scale_size(guide="none")+ylab("Reads per Library")+scale_y_continuous(breaks=seq(0,12,2)*10**6)
+source("summary/alignmentstats.r")
 
 
 
-ggsave("summary/images/alignment_summary.png",p1,height=4,width=10)
+
 # Mapping quality
 mapq<-read.table("summary/mapq_summary.txt",header=TRUE)[,(1:5)]
 colnames(mapq)<-c("NS270A","NS30A","NS30B","NS75A","NS75B")

@@ -76,9 +76,10 @@ def genome(liszt)
     2246121 (62.17%) aligned exactly 1 time
     867831 (24.02%) aligned >1 times
 =end
+  #puts(liszt);exit
   dict={}; liszt.shift
-  dict["total"]=liszt.shift.split[0]; liszt.shift
-  dict["paired"]=liszt.shift.split[0]
+  dict["total"]=liszt.shift.split[0]; #liszt.shift
+  dict["paired"]=liszt.shift.split[0]; liszt.shift #conc 0
   dict["conc_once"]=liszt.shift.split[0]
   dict["conc_mult"]=liszt.shift.split[0]
   liszt.shift(2); dict["disc_once"]=""; dict["disc_mult"]=""
@@ -87,7 +88,7 @@ def genome(liszt)
   liszt.shift
   dict["unaligned_pairs"]=liszt.shift.split[0]
   liszt.shift
-  dict["unmates"]=liszt.shift.split[0]
+  dict["unmates"]=liszt.shift.split[0] #unaligned mates
   dict["mate_once"]=liszt.shift.split[0]
   dict["mate_mult"]=liszt.shift.split[0]
   dict["unpaired"]=liszt.shift.split[0]
@@ -143,7 +144,7 @@ def main
   begin
 
     while line=STDIN.gets
-      puts(line)
+      #puts(line)
       if line.include?("overall alignment rate") and x ==2
         alignment << line.split("%")[0]
         x=0
