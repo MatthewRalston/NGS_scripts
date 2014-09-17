@@ -39,6 +39,8 @@ rdeseq<-rlogTransformation(deseq,blind=TRUE)
 rawcounts<-as.data.frame(counts(deseq,normalized=FALSE))
 normcounts<-as.data.frame(counts(deseq,normalized=TRUE))
 regcounts<-as.data.frame(assay(rdeseq))
+write.table(regcounts,file="circos/data/expression.txt",row.names=T,col.names=T,quote=FALSE)
+res<-results(deseq)
 #################################################################
 #            Exploratory plots
 #################################################################
@@ -51,10 +53,25 @@ p2<-ggplot(melt(normcounts[,c(21,26,22,24)]+1),aes(x=variable,y=value))+geom_jit
 p<-arrangeGrob(p1,p2,ncol=2)
 ggsave("summary/images/normalization.png",p)
 
-# MA-plots
+
+
+# MA-plots and lists of differential expression results (time1 time2 stress buohtime batime)
+# for buohtime and batime, indexes 1, 2, 3, 4 each refere to timepoints 15, 75, 150, and 270, resp.
 source("summary/ma-plots.r")
+# Number of genes in each comparison
+source("summary/comparisons.r")
 # Variance vs. expression level trend, Residual plot, dispersion
 source("summary/regularization.r")
 # PCA
 source("summary/pca.r")
+# Cluster analysis
+source("summary/cluster.r")
 # GO analysis
+
+
+# Circos data
+# Currently: logit transform
+# other ideas:
+# angular -> asin(sqrt(x))
+# http://www.stata.com/users/njc/topichlp/transint.hlp
+source("summary/circos.r")

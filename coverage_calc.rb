@@ -118,7 +118,7 @@ end
 
 def cov_calc(gcov)
 	# calculate the coverage over the percentiles of the gene, given an array of per-base coverage for the gene.
-  p=(1...100).to_a
+  p=(1..100).to_a
   avcov=[];sdcov=[]
   # iterates through the percentiles, gathering the average and standard deviation of coverage throughout the percentile
   

@@ -2,8 +2,8 @@
 #PBS -N visualization
 #PBS -r n
 #PBS -V
-#PBS -l nodes=1:ppn=20
-#PBS -l walltime=24:00:00
+#PBS -l nodes=1:ppn=15
+#PBS -l walltime=80:00:00
 #PBS -d /home/mrals/Final
 #------------------------------------------------
 # Title: viewing.sh
@@ -51,7 +51,7 @@ export MRG="tmp/merge"
 export REFGENOME=reference/CAC.genome
 # CORES: This is the number of processor cores to
 # be used for parallelization.
-CORES=20
+CORES=15
 # EXPRDIR: This is where the bed and bedgraph coverage
 # files will be produced
 export EXPRDIR=Expression
@@ -73,7 +73,7 @@ FILES=`/usr/bin/ls $INDIR/*.3.bam`
 parallel -j $CORES 'bamsplit {} $MRG $PICARD $REFGENOME $OUTDIR $EXPRDIR' ::: $FILES
 
 
-
+#./coverage_calc.rb
 
 
 

@@ -27,3 +27,10 @@ resid<-rbind(rawmodel,normmodel,regmodel)
 colnames(resid)<-c("Variable","Fitted","Residuals")
 p1<-ggplot(resid)+geom_point(aes(x=Fitted,y=Residuals,colour=Variable),alpha=0.7,size=2)+scale_colour_manual("Legend",values=c("black","#56B4E9","red"),labels=c("Raw counts","Normalized counts", "Model fit"))+xlab("Gene Expression")+scale_y_continuous(breaks=-1:4,labels=math_format(10^.x))+ylab("Residuals")+scale_x_continuous(breaks=(-1:4),labels=math_format(10^.x))+annotation_logticks(base=10,sides='bl')
 ggsave("summary/images/Residuals.png",p1)
+
+# SD as a function of mean
+library("vsn")
+par(mfrow=c(1,3))
+notAllZero <- (rowSums(counts(deseq))>0)
+meanSdPlot(log2(counts(deseq,normalized=TRUE)[notAllZero,] + 1), ylim = c(0,2.5))
+meanSdPlot(assay(rdeseq[notAllZero,]), ylim = c(0,2.5))

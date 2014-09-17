@@ -5,6 +5,12 @@
 # This R script contains code to generate summary plots for the alignment
 # of Fastq reads to the C_ac genome.
 
+
+
+
+#    A l i g n m e n t   S u m m a r y   V i o l i n   P l o t
+
+
 talign<-read.table("summary-alignment.txt",header=TRUE,sep="\t")
 align<-talign[!grepl("TEX",talign$ID),]
 texalign<-talign[grepl("TEX",talign$ID),]
@@ -58,3 +64,87 @@ p1<-ggplot(final,aes(x=tex,y=value))+geom_violin(aes(fill=mycolor,scale="width")
 ggsave("summary/images/alignment_summary.png",p1,height=4,width=10)
 
 
+#                      C o v e r a g e   S u m m a r y
+
+
+
+#                       G E N E   C O V E R A G E   S U M M A R Y
+
+#** Update summary.r to calculate/plot:
+#*** standard deviation of coverage per gene
+#*** coefficient of variation of coverage per gene (sigma/mu)
+#*** Plot avg coverage vs gene length
+#*** Plot coefficient of variation vs gene length
+#*** Plot avg coverage vs GC content
+#*** Plot coefficient of variation vs GC
+
+bias<-data.frame(a=numeric(),b=numeric(),c=numeric(),d=numeric())
+files<-list.files(paste(mydir,"summary/coverage",sep="/"),pattern="*.avcov",full.names=T)
+my.list<-list()
+my.frame<-data.frame()
+col<-c()
+for (i in 1:length(files)) {
+    cov<-read.table(files[i],header=T)
+    
+    cov$Avg<-rowMeans(cov[,(4:103)])
+    cov$sd<-apply(cov[,(4:103)],1,sd)
+    cov$cov<-cov$Avg*cov$sd
+    colnames(cov)<-c("Gene_id","length","gc", (1:100), "Avg","sd","cov")
+    mcov<-melt(cov[,4:103])
+    colnames(mcov)<-c("percent","avg")
+    # Check for correlation between Avg coverage, coefficient of variation x length, gc content
+    x<-log10(cov$Avg + 1)
+    y<-log10(cov$cov + 1)
+    z<-c(summary(lm(x~cov$length))$adj.r.squared,summary(lm(x~cov$gc))$adj.r.squared, summary(lm(y~cov$length))$adj.r.squared, summary(lm(y~cov$gc))$adj.r.squared)
+    bias<-rbind(bias,z)
+    
+    
+# Partitions data into quartiles
+    mq1<-melt(cov[cov$Avg > summary(cov$Avg)[1] & cov$Avg < summary(cov$Avg)[2],(4:103)])
+    mq2<-melt(cov[cov$Avg > summary(cov$Avg)[2] & cov$Avg < summary(cov$Avg)[3],(4:103)])
+    mq3<-melt(cov[cov$Avg > summary(cov$Avg)[3] & cov$Avg < summary(cov$Avg)[5],(4:103)])
+    mq4<-melt(cov[cov$Avg > summary(cov$Avg)[5] & cov$Avg < summary(cov$Avg)[6],(4:103)])
+    
+    
+    q<-data.frame((1:100),t(apply(cov[,(4:103)],2,median.quartile)))
+    colnames(q)<-c("percent","second","middle","fourth")
+    q1<-as.data.frame(cbind((1:100),t(apply(cov[cov$Avg > summary(cov$Avg)[1] & cov$Avg < summary(cov$Avg)[2],(4:103)],2,median.quartile))))
+    q2<-as.data.frame(cbind((1:100),t(apply(cov[cov$Avg > summary(cov$Avg)[2] & cov$Avg < summary(cov$Avg)[3],(4:103)],2,median.quartile))))
+    q3<-as.data.frame(cbind((1:100),t(apply(cov[cov$Avg > summary(cov$Avg)[3] & cov$Avg < summary(cov$Avg)[5],(4:103)],2,median.quartile))))
+    q4<-as.data.frame(cbind((1:100),t(apply(cov[cov$Avg > summary(cov$Avg)[5] & cov$Avg < summary(cov$Avg)[6],(4:103)],2,median.quartile))))
+# Bar plot
+    p1<-ggplot(q1,aes(x=V1,y=y))+geom_bar(stat="identity")+xlab("Percentage of gene")+ylab("Median Coverage of 1st quartile")+scale_x_discrete(breaks=pretty_breaks(n=10))
+    p2<-ggplot(q2,aes(x=V1,y=y))+geom_bar(stat="identity")+xlab("Percentage of gene")+ylab("Median Coverage of 2nd quartile")+scale_x_discrete(breaks=pretty_breaks(n=10))
+    p3<-ggplot(q3,aes(x=V1,y=y))+geom_bar(stat="identity")+xlab("Percentage of gene")+ylab("Median Coverage of 3rd quartile")+scale_x_discrete(breaks=pretty_breaks(n=10))
+    p4<-ggplot(q4,aes(x=V1,y=y))+geom_bar(stat="identity")+xlab("Percentage of gene")+ylab("Median Coverage of 4th quartile")+scale_x_discrete(breaks=pretty_breaks(n=10))
+    p<-arrangeGrob(p1,p2,p3,p4,ncol=2)
+    ggsave.square(filename=paste(mydir,"summary/images/coverage/Quartile_cov_",tail(strsplit(files[i],"/")[[1]],n=1),".png",sep=""),p)
+    
+    x<-as.matrix(cbind(as.numeric(mcov$variable), mcov$value))
+    #hist(x[,2],n=200)
+    
+    
+    # SCATTER
+    p1<-ggplot(mcov,aes(percent,avg))+geom_point(alpha=0.2,size=1.5)+ylab("Coverage")+xlab("Percentage of gene")+scale_x_discrete(breaks=pretty_breaks(n=10))+scale_y_log10(breaks=10**(-1:4),limits=c(0.1,1e04),labels=trans_format("log10",math_format(10^.x)))+annotation_logticks(base=10,sides="l")+stat_summary(fun.y=median.quartile,geom="point",colour="darkred")
+# Jitter
+    p2<-ggplot(mcov,aes(x=percent,y=avg))+geom_jitter(alpha=0.2,size=1)+ylab("Coverage")+xlab("Percentage of gene")+scale_x_discrete(breaks=pretty_breaks(n=10))+scale_y_log10(breaks=10**(-1:4),limits=c(0.1,1e04),labels=trans_format("log10",math_format(10^.x)))+annotation_logticks(base=10,sides="l")+stat_summary(fun.y=median.quartile,geom="point",colour="red")
+    
+# Violin plot
+    p3<-ggplot(mcov,aes(percent,avg))+geom_violin(fill="grey4")+stat_summary(fun.y=median.quartile,geom='point',colour="red")+ylab("Coverage")+xlab("Percentage of gene")+scale_x_discrete(breaks=pretty_breaks(n=10))+scale_y_log10(breaks=10**(-1:4),limits=c(0.1,1e04),labels=trans_format("log10",math_format(10^.x)))+annotation_logticks(base=10,sides="l")
+    ggsave(paste("summary/images/coverage/scatter_cov",tail(strsplit(files[i],"/")[[1]],n=1),".png",sep=""),p1)
+    ggsave(paste("summary/images/coverage/jitter_cov",tail(strsplit(files[i],"/")[[1]],n=1),".png",sep=""),p2)
+    ggsave(paste("summary/images/coverage/violin_cov",tail(strsplit(files[i],"/")[[1]],n=1),".png",sep=""),p3)
+                                        # Half violin
+#ggplot(data=mcov,aes(x=log10(avg)))+stat_density(aes(y=..density..))+scale_x_continuous(labels=math_format(10^.x))+facet_grid(. ~ percent)+coord_flip()
+    my.list[[i]]<-mcov
+    col[i]<-strsplit(tail(strsplit(files[i],"/")[[1]],n=1),"\\.")[[1]][1]
+}
+colnames(bias)<-c("avg.vs.len","av.vs.gc","cov.vs.len","cov.vs.gc")
+              
+for (i in 1:length(my.list)) {
+    my.frame<-cbind.fill(my.frame,my.list[[i]]$avg)
+}
+colnames(my.frame)<-col
+mframe<-melt(my.frame)
+p1<-ggplot(mframe,aes(Var2,value))+geom_violin(fill="grey20")+stat_summary(fun.y=median.quartile,geom='point',colour="red")+ylab("Coverage")+xlab("Sample")+scale_y_log10(breaks=10**(-1:4),limits=c(0.1,1e04),labels=trans_format("log10",math_format(10^.x)))+annotation_logticks(base=10,sides="l")
+ggsave("summary/images/coverage/summary_violin.png",p1)
