@@ -40,8 +40,8 @@ REFPROTEOME=reference/CAC_proteins.fasta
 #
 BAMDIR=SAM_processed
 INDIR=/home/mrals/Final/final/finalfastq
-OUTDIR=/home/mrals/Final/Trinity_ref
-#OUTDIR=/home/mrals/Final/Trinity_de_novo
+REFOUT=/home/mrals/Final/Trinity_ref
+TRINOUT=/home/mrals/Final/Trinity_de_novo
 #TRIN=Trinity.fasta
 RAW=Trin_raw
 TRIN=Trinity-GG.fasta
@@ -58,14 +58,18 @@ export R1 R2
 # Merge fastq files
 #
 ##################################################
-#zcat $INDIR/*unpaired.gz | grep "1:N:0" | gzip >> $OUTDIR/t1.fq.gz
-#zcat $INDIR/*unpaired.gz | grep "2:N:0" | gzip >> $OUTDIR/t2.fq.gz
-#cat $OUTDIR/t*.fq.gz  > $RAW/unpaired.fq.gz
-#cat $INDIR/*.1.gz > $RAW/left.fq.gz
-#cat $INDIR/*.2.gz > $RAW/right.fq.gz
-#zcat $OUTDIR/t1.fq.gz $INDIR/*.1.gz | ruby -ne '$_[0..2] == "@HWI" ? puts("#{$_.chomp}/1") : puts($_)' | gzip > $RAW/left_combined.fq.gz
-#zcat $OUTDIR/t2.fq.gz $INDIR/*.2.gz | ruby -ne '$_[0..2] == "@HWI" ? puts("#{$_.chomp}/2") : puts($_)' | gzip > $RAW/right_combined.fq.gz
-#rm $OUTDIR/t1.fq.gz $OUTDIR/t2.fq.gz
+#zcat $INDIR/*unpaired.gz | ./untangler 1 | gzip > $RAW/t1.fq.gz
+#zcat $INDIR/*unpaired.gz | ./untangler 2 | gzip > $RAW/t2.fq.gz
+# Transrate only
+#zcat $INDIR/*unpaired.gz | ruby -ne '$_[0..3] == "@HWI" ? puts($_.chomp.split("_")[0]) : puts($_.chomp)' | gzip > $RAW/unpaired.fq.gz
+#zcat $INDIR/*.1.gz | ruby -ne '$_[0..3] == "@HWI" ? puts($_.chomp.split("_")[0]) : puts($_.chomp)' | gzip > $RAW/left.fq.gz
+#zcat $INDIR/*.2.gz | ruby -ne '$_[0..3] == "@HWI" ? puts($_.chomp.split("_")[0]) : puts($_.chomp)' | gzip > $RAW/right.fq.gz
+# Trinity only
+#zcat $INDIR/*.1.gz $RAW/t1.fq.gz | ruby -ne '$_[0..3] == "@HWI" ? puts($_.chomp+"/1") : puts($_.chomp)' | gzip > $RAW/left_combined.fq.gz
+#zcat $INDIR/*.2.gz | ruby -ne '$_[0..3] == "@HWI" ? puts($_.chomp+"/2") : puts($_.chomp)' | gzip > $RAW/right_combined.fq.gz
+# Corrects an issue with all unpaired right reads being reverse complemented in trimfiltercheck
+#zcat $RAW/t2.fq.gz | ruby -ne '$_[0..3] == "@HWI" ? puts($_.chomp+"/2") : puts($_.chomp)' | fastx_reverse_complement -Q33 | gzip >> $RAW/right_combined.fq.gz
+#rm $RAW/t1.fq.gz $RAW/t2.fq.gz
 
 
 ##################################################
@@ -82,7 +86,7 @@ export R1 R2
 
 ###Trinity --genome $REFGENOME --genome_guided_use_bam $TMP/All.bam --genome_guided_max_intron 1 --genome_guided_sort_buffer 15G --genome_guided_CPU $CORES --SS_lib_type FR --seqType fq --jaccard_clip --JM $JM --CPU $CORES --output $OUTDIR --left $TMP/left.fq --right $TMP/right.fq &> $OUTDIR/ref_assembly.log
 
-#Trinity --left $RAW/left_combined.fq.gz --right $RAW/right_combined.fq.gz --jaccard_clip --genome $REFGENOME --genome_guided_max_intron 1 --genome_guided_use_bam $RAW/All.bam --JM $JM --seqType fq --output $OUTDIR --genome_guided_CPU 4 --CPU $CORES --SS_lib_type FR
+#Trinity --left $RAW/left_combined.fq.gz --right $RAW/right_combined.fq.gz --jaccard_clip --genome $REFGENOME --genome_guided_max_intron 1 --genome_guided_use_bam $RAW/All.bam --JM $JM --seqType fq --output $REFOUT --genome_guided_CPU 4 --CPU $CORES --SS_lib_type FR
 
 
 ##################################################
@@ -91,7 +95,7 @@ export R1 R2
 # This step performs the initial assembly with trinity, producing a fasta assembly Trinity.fa
 # in $OUTDIR
 ##################################################
-#Trinity --seqType fq --JM $JM --left $OUTDIR/left.fq --right $OUTDIR/right.fq --SS_lib_type FR --CPU $CORES --jaccard_clip --output $OUTDIR &> $OUTDIR/denovo_assembly.log
+#Trinity --seqType fq --JM $JM --left $RAW/left_combined.fq.gz --right $RAW/right_combined.fq.gz --SS_lib_type FR --CPU $CORES --jaccard_clip --output $TRINOUT &> $TRINOUT/denovo_assembly.log
 
 
 ##################################################
@@ -99,9 +103,14 @@ export R1 R2
 #    A s s e m b l y    M e t r i c s
 #
 ##################################################
-transrate -a $OUTDIR/$TRIN -r $REFPROTEOME -g $REFGENOME -l $RAW/left.fq.gz -i $RAW/right.fq.gz -u $RAW/unpaired.fq.gz -s fr -o $OUTDIR/singletons.sam -f $OUTDIR/transrate_output.csv -t $CORES -x 0
+which ruby
 
+source ~/.rvm/bin/rvm
 
+rvm use ruby-2.1.2@transrate
+transrate -a $REFOUT/$TRIN -r $REFPROTEOME -g $REFGENOME -l $RAW/left.fq.gz -i $RAW/right.fq.gz -u $RAW/unpaired.fq.gz -s fr -o $REFOUT/singletons.sam -f $REFOUT/transrate_output.csv -t $CORES -x 0
+
+#transrate -a $TRINOUT/Trinity.fasta -r $REFPROTEOME -g $REFGENOME -l $RAW/left.fq.gz $RAW/right.fq.gz -u $RAW/unpaired.fq.gz -s fr -o $TRINOUT/singletons.sam -f $TRINOUT/transrate_output.csv -t $CORES -x 0
 
 
 

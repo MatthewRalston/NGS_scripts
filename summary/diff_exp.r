@@ -57,7 +57,7 @@ ggsave("summary/images/normalization.png",p)
 
 # MA-plots and lists of differential expression results (time1 time2 stress buohtime batime)
 # for buohtime and batime, indexes 1, 2, 3, 4 each refere to timepoints 15, 75, 150, and 270, resp.
-source("summary/ma-plots.r")
+source("summary/maplots.r")
 # Number of genes in each comparison
 source("summary/comparisons.r")
 # Variance vs. expression level trend, Residual plot, dispersion

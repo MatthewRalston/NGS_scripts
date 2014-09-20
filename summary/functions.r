@@ -17,9 +17,10 @@ require('gtools')
 # p-value transform
 pval.trans <- function(x) {
     base <- 10
-    y <- logit(x)
-    #y <- -log(x,base)
-    return y
+    #y <- x
+    #y <- logit(x)
+    y <- -log(x,base)
+    return(y)
 }
 
 multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {

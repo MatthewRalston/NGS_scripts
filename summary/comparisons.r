@@ -13,58 +13,77 @@
 #
 # a = alpha value
 # b = log2 fold change
-x<-list(c(0.01,1.0),c(0.01,1.5),c(0.01,2.0),c(0.05,1.0),c(0.05,1.5),c(0.05,2.0))
+library('gtools')
+
+#       D 3    S T U F F
 
 
-# BuOH over time
-buohgenes<-data.frame()
-for (i in 1:length(buohtime)) {
-    fc<-c()
-    for (j in 1:length(x)) {
-        a<-x[[j]][1]
-        b<-x[[j]][2]
-        tmp<-regcounts[rownames(subset(buohtime[[i]],subset=buohtime[[i]]$padj < a & abs(buohtime[[i]]$log2FoldChange) > b)),]
-        fc<-c(fc,length(rownames(tmp)))
+times<-c("15","75","150","270")
+stresses<-c("BA","BuOH","NS")
+texes<-c("Normal","TEX")
+
+time1=list()
+time2=list()
+
+buohtime=list()
+batime=list()
+# round to 'r' digits
+r = 5
+
+
+
+
+
+# This compares all possible sets of combinations, printing the results to an svg
+
+for (t1 in times) {
+    for (s1 in stresses) {
+        # Control conditions
+        for (t2 in times) {
+            for (s2 in stresses) {
+                # Multi factor comparison
+                if (s1 != s2 || t1 != t2) {
+                    x<-as.data.frame(results(deseq,contrast=list(paste('time',t1,'.cond',s1,sep=''),paste('time',t2,'.cond',s2,sep=''))))
+                    l<-length(rownames(x))
+                    cndtn<-rep(paste(s1,'.',t1,sep=''),l)
+                    cntrl<-rep(paste(s2,'.',t2,sep=''),l)
+                    x$padj[is.na(x$padj)]<-0.9999999
+                    x<-data.frame(id=rownames(x),Logexp=round(log10(x$baseMean+1),digits=r),foldchange=round(x$log2FoldChange,digits=r),pval=round(pval.trans(x$padj),digits=r),condition=cndtn,control=cntrl)
+                    write.table(x,file=paste("summary/data/",s1,'.',t1,'-',s2,'.',t2,".csv",sep=''),quote=F,sep=",",row.names=F,col.names=T)
+                }
+                # Stress comparison
+                if (s1 != s2) {
+                    x<-as.data.frame(results(deseq,contrast=list(paste('cond',s1,sep=''),paste('cond',s2,sep=''))))
+                    l<-length(rownames(x))
+                    cndtn<-rep(s1,l)
+                    cntrl<-rep(s2,l)
+                    x$padj[is.na(x$padj)]<-0.9999999           
+                    x<-data.frame(id=rownames(x),Logexp=round(log10(x$baseMean+1),digits=r),foldchange=round(x$log2FoldChange,digits=r),pval=round(pval.trans(x$padj),digits=r),condition=cndtn,control=cntrl)
+                    write.table(x,file=paste("summary/data/",s1,'.',s2,'.csv',sep=''),quote=F,sep=",",row.names=F,col.names=T)
+                }
+            }
+            # Time comparison
+            if (t1 != t2) {
+                x<-as.data.frame(results(deseq,contrast=list(paste('time',t1,sep=''),paste('time',t2,sep=''))))
+                l<-length(rownames(x))
+                cndtn<-rep(t1,l)
+                cntrl<-rep(t2,l)
+                x$padj[is.na(x$padj)]<-0.9999999
+                x<-data.frame(id=rownames(x),Logexp=round(log10(x$baseMean+1),digits=r),foldchange=round(x$log2FoldChange,digits=r),pval=round(pval.trans(x$padj),digits=r),condition=cndtn,control=cntrl)
+                write.table(x,file=paste("summary/data/",t1,'.',t2,'.csv',sep=''),quote=F,sep=",",row.names=F,col.names=T)
+            }
+        }
     }
-    buohgenes<-rbind(buohgenes,fc)
-}
-colnames(buohgenes)<-c("1.0_0.01","1.5_0.01","2.0_0.01","1.0_0.05","1.5_0.05","2.0_0.05")
-rownames(buohgenes)<-c("15","75","150","270")
-write.table(buohgenes,file="summary/buoh-pairwise.txt",sep="\t",row.names=T,col.names=T,quote=F)
-
-# Butyrate over time
-bagenes<-data.frame()
-for (i in 1:length(batime)) {
-    fc<-c()
-    for (j in 1:length(x)) {
-        a<-x[[j]][1]
-        b<-x[[j]][2]
-        tmp<-regcounts[rownames(subset(batime[[i]],subset=batime[[i]]$padj < a & abs(batime[[i]]$log2FoldChange) > b)),]
-        fc<-c(fc,length(rownames(tmp)))
-    }
-    bagenes<-rbind(bagenes,fc)
 }
 
-colnames(buohgenes)<-c("1.0_0.01","1.5_0.01","2.0_0.01","1.0_0.05","1.5_0.05","2.0_0.05")
-rownames(buohgenes)<-c("15","75","150","270")
-write.table(buohgenes,file="summary/butyrate-pairwise.txt",sep="\t",row.names=T,col.names=T,quote=F)
-
-# Stress
 
 
-buohfc<-c()
-for (i in 1:length(x)) {
-    a<-x[[i]][1]
-    b<-x[[i]][2]
-    buohfc<-c(buohfc,length(rownames(subset(stress[[1]],subset=stress[[1]]$padj < a & abs(stress[[1]]$log2FoldChange) > b))))
-}
-bafc<-c()
-for (i in 1:length(x)) {
-    a<-x[[i]][1]
-    b<-x[[i]][2]
-    bafc<-c(bafc,length(rownames(subset(stress[[2]],subset=stress[[2]]$padj < a & abs(stress[[2]]$log2FoldChange) > b))))
-}
-stressgenes<-rbind(buohfc,bafc)
-colnames(stressgenes)<-c("1.0_0.01","1.5_0.01","2.0_0.01","1.0_0.05","1.5_0.05","2.0_0.05")
-rownames(stressgenes)<-c("buoh","butyrate")
-write.table(stressgenes,file="summary/general-pairwise.txt",sep="\t",row.names=T,col.names=T,quote=F)
+
+
+
+
+
+
+
+
+
