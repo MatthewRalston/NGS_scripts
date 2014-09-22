@@ -114,8 +114,34 @@ function bamsplit {
 
 }
 
+function optics {
+    if [[ ${1: -1} == "/" ]]
+    then
+	outdir=$1
+	file=${1%?}
+    else
+	file=$1
+	outdir="$1/"
+    fi
+    minpts=$2
+    reach=$3
+    maxima=$4
+    dist=$5
+    n="null"
+    cmd="OPTICS -i $file/$file.csv"
+    # add on the mkdir requirements and -o requirements
+    [[ $minpts != $n ]] && cmd="$cmd -n $minpts" && outdir="$outdirmin_$minpts"
+    [[ $reach != $n ]] && cmd="$cmd -r $reach" && outdir="$outdirreach_$reach"
+    [[ $maxima != $n ]] && cmd="$cmd -m $maxima" && outdir="$outdirmaxima_$maxima"
+    [[ $dist != $n ]] && cmd="$cmd -d $dist" && outdir="$outdirdist_$dist"
+    mkdir $outdir
+    cmd="$cmd -o $outdir"
+    eval $cmd
+    silhouette.r $outdir/optics-clustering.csv $file
+}
 
 
-export -f quality preprocess bamsplit
+
+export -f quality preprocess bamsplit optics
 
 ## EOF------------------------------------------
