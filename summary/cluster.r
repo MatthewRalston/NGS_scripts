@@ -6,6 +6,7 @@
 
 library('gplots')
 library('fpc')
+library('cluster')
 a = 0.05 # alpha value
 l = 1.0 # log fold change threshold
 
@@ -41,10 +42,7 @@ n=100 # of genes
 #x<-as.matrix(regcounts[select,]) #subset of select
 
 
-
-
-#   H I E R A R C H I C A L   C L U S T E R I N G
-# Butyrate
+#   D A T A      P R E P
 ba<-regcounts[rownames(subset(stress[[2]],subset=stress[[2]]$padj < a & abs(stress[[2]]$log2FoldChange) > l)),]
 nba=length(rownames(ba))
 kba=sqrt(nba/2)
@@ -52,20 +50,48 @@ bascaled<-t(scale(t(as.matrix(ba))))
 colnames(bascaled)<-colnames(regcounts)
 rownames(bascaled)<-rownames(ba)
 bacor<-cor(t(bascaled),method="pearson")
-badist<-as.dist(1-bacor)
+
+
+
+
+#    C L U S T E R I N G
+
+#       Distance matrix from raw data
+badist<-dist(ba)
+#       Distance matrix from correlation matrix
+bacordist<-dist(1-bacor)
+#       Distance matrix from scaled data
+bascaledist<-dist(bascaled)
+
 
 # Hierarchical clustering
 baclust<-hclust(badist,method="centroid")
 basub<-cutree(baclust,k=kba)
 #write.table(basub,file="circos/data/interactions/hierarchical_butyrate.raw",sep="\t",quote=FALSE,col.names=FALSE)
+sils<-silhouette(basub,badist)
+
 
 # K means clustering
 km<-kmeans(badist,kba,iter.max=24,nstart=8)
 write.table(km$cluster,file="circos/data/interactions/hierarchical_butyrate.raw",sep="\t",quote=FALSE,col.names=FALSE)
+sils<-silhouette(km$cluster,badist)
 
 # DBSCAN (make iteration?)
 dr<-dbscan(badist,0.15,method="dist",showplot=TRUE)
 #write.table(data.frame(rownames(bascaled)[dr$scaled > 0],dr$cluster[dr$cluster > 0]),file="circos/data/interactions/hierarchical_butyrate.raw",sep="\t",quote=FALSE,col.names=FALSE)
+
+#OPTICS - DONT FORGET TO RUN THE ALGORITHM
+# THE DISTANCE METRIC SHOULD BE THE SAME BETWEEN THE TWO!
+# PRINT WITH ROW NAMES
+
+
+write.table(ba,file="clustering/raw/raw.csv",sep=",",quote=F,row.names=T,col.names=F)
+write.table(bacor,file="clustering/correlation/correlation.csv",sep=",",quote=F,row.names=T,col.names=F)
+write.table(bascaled,file="clustering/scaled/scaled.csv",sep=",",quote=F,row.names=T,col.names=F)
+
+#clusters<-read.table(file="clustering/optics-clustering.csv",sep=",",col.names=c("id","cluster"))
+#sils<-silhouette(clusters$cluster,dist(bascaled[clusters$id,]))
+
 
 # Partitioning around medoids
 pam(badist,kba,diss=TRUE)

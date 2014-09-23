@@ -13,7 +13,7 @@ library('reshape2')
 library('cairoDevice')
 library('gridExtra')
 options(max.print=1000)
-
+options(scipen=999)
 
 Cairo()
 mydir="/home/mrals/Final"

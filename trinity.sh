@@ -24,7 +24,7 @@
 
 
 #set -e
-
+date
 #------------------------------------------------
 # Parameters
 #------------------------------------------------
@@ -58,8 +58,8 @@ export R1 R2
 # Merge fastq files
 #
 ##################################################
-#zcat $INDIR/*unpaired.gz | ./untangler 1 | gzip > $RAW/t1.fq.gz
-#zcat $INDIR/*unpaired.gz | ./untangler 2 | gzip > $RAW/t2.fq.gz
+#zcat $INDIR/*unpaired.gz | ./untangler.rb 1 | gzip > $RAW/t1.fq.gz
+#zcat $INDIR/*unpaired.gz | ./untangler.rb 2 | gzip > $RAW/t2.fq.gz
 # Transrate only
 #zcat $INDIR/*unpaired.gz | ruby -ne '$_[0..3] == "@HWI" ? puts($_.chomp.split("_")[0]) : puts($_.chomp)' | gzip > $RAW/unpaired.fq.gz
 #zcat $INDIR/*.1.gz | ruby -ne '$_[0..3] == "@HWI" ? puts($_.chomp.split("_")[0]) : puts($_.chomp)' | gzip > $RAW/left.fq.gz
@@ -86,7 +86,7 @@ export R1 R2
 
 ###Trinity --genome $REFGENOME --genome_guided_use_bam $TMP/All.bam --genome_guided_max_intron 1 --genome_guided_sort_buffer 15G --genome_guided_CPU $CORES --SS_lib_type FR --seqType fq --jaccard_clip --JM $JM --CPU $CORES --output $OUTDIR --left $TMP/left.fq --right $TMP/right.fq &> $OUTDIR/ref_assembly.log
 
-#Trinity --left $RAW/left_combined.fq.gz --right $RAW/right_combined.fq.gz --jaccard_clip --genome $REFGENOME --genome_guided_max_intron 1 --genome_guided_use_bam $RAW/All.bam --JM $JM --seqType fq --output $REFOUT --genome_guided_CPU 4 --CPU $CORES --SS_lib_type FR
+Trinity --left $RAW/left_combined.fq.gz --right $RAW/right_combined.fq.gz --jaccard_clip --genome $REFGENOME --genome_guided_max_intron 1 --genome_guided_use_bam $RAW/All.bam --JM $JM --seqType fq --output $REFOUT --genome_guided_CPU 4 --CPU $CORES --SS_lib_type FR
 
 
 ##################################################
@@ -103,16 +103,14 @@ export R1 R2
 #    A s s e m b l y    M e t r i c s
 #
 ##################################################
-which ruby
 
-source ~/.rvm/bin/rvm
 
-rvm use ruby-2.1.2@transrate
+#rvm use ruby-2.1.2@transrate
 transrate -a $REFOUT/$TRIN -r $REFPROTEOME -g $REFGENOME -l $RAW/left.fq.gz -i $RAW/right.fq.gz -u $RAW/unpaired.fq.gz -s fr -o $REFOUT/singletons.sam -f $REFOUT/transrate_output.csv -t $CORES -x 0
 
 #transrate -a $TRINOUT/Trinity.fasta -r $REFPROTEOME -g $REFGENOME -l $RAW/left.fq.gz $RAW/right.fq.gz -u $RAW/unpaired.fq.gz -s fr -o $TRINOUT/singletons.sam -f $TRINOUT/transrate_output.csv -t $CORES -x 0
 
-
+date
 
 
 

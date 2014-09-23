@@ -115,29 +115,22 @@ function bamsplit {
 }
 
 function optics {
-    if [[ ${1: -1} == "/" ]]
-    then
-	outdir=$1
-	file=${1%?}
-    else
-	file=$1
-	outdir="$1/"
-    fi
+    file="$1/$1.csv"
     minpts=$2
     reach=$3
     maxima=$4
     dist=$5
-    n="null"
-    cmd="OPTICS -i $file/$file.csv"
-    # add on the mkdir requirements and -o requirements
-    [[ $minpts != $n ]] && cmd="$cmd -n $minpts" && outdir="$outdirmin_$minpts"
-    [[ $reach != $n ]] && cmd="$cmd -r $reach" && outdir="$outdirreach_$reach"
-    [[ $maxima != $n ]] && cmd="$cmd -m $maxima" && outdir="$outdirmaxima_$maxima"
-    [[ $dist != $n ]] && cmd="$cmd -d $dist" && outdir="$outdirdist_$dist"
+    outdir="$1/min_$2_reach_$3_maxima_$4_dist_$5"
+    #n="null"
+    cmd="OPTICS -i $file -n $minpts -r $reach -m $maxima -d $dist"
+    #[[ $minpts != $n ]] && cmd="$cmd -n $minpts" && outdir="$outdirmin_$minpts"
+    #[[ $reach != $n ]] && cmd="$cmd -r $reach" && outdir="$outdirreach_$reach"
+    #[[ $maxima != $n ]] && cmd="$cmd -m $maxima" && outdir="$outdirmaxima_$maxima"
+    #[[ $dist != $n ]] && cmd="$cmd -d $dist" && outdir="$outdirdist_$dist"
     mkdir $outdir
     cmd="$cmd -o $outdir"
     eval $cmd
-    silhouette.r $outdir/optics-clustering.csv $file
+    echo "$outdir,$(silhouette.r $outdir/optics-clustering.csv $file | ruby -e 'line=gets.chomp.split.collect {|i| i.to_f}; sum=line.reduce(:+); puts(sum/line.size)')"
 }
 
 
