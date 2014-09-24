@@ -120,17 +120,20 @@ function optics {
     reach=$3
     maxima=$4
     dist=$5
-    outdir="$1/min_$2_reach_$3_maxima_$4_dist_$5"
-    #n="null"
-    cmd="OPTICS -i $file -n $minpts -r $reach -m $maxima -d $dist"
-    #[[ $minpts != $n ]] && cmd="$cmd -n $minpts" && outdir="$outdirmin_$minpts"
-    #[[ $reach != $n ]] && cmd="$cmd -r $reach" && outdir="$outdirreach_$reach"
-    #[[ $maxima != $n ]] && cmd="$cmd -m $maxima" && outdir="$outdirmaxima_$maxima"
-    #[[ $dist != $n ]] && cmd="$cmd -d $dist" && outdir="$outdirdist_$dist"
+    area=$6
+    n="n"
+    outdir=$1/
+    cmd="OPTICS -i $file"
+    #outdir="$1/min_$2_reach_$3_maxima_$4_dist_$5"
+    #cmd="OPTICS -i $file -n $minpts -r $reach -m $maxima -d $dist"
+    [[ $minpts != $n ]] && cmd="$cmd -n $minpts" && outdir="${outdir}min_${minpts}"
+    [[ $reach != $n ]] && cmd="$cmd -r $reach" && outdir="${outdir}reach_${reach}"
+    [[ $maxima != $n ]] && cmd="$cmd -m $maxima" && outdir="${outdir}maxima_${maxima}"
+    [[ $dist != $n ]] && cmd="$cmd -d $dist" && outdir="${outdir}dist_${dist}"
+    [[ $area != $n ]] && cmd="$cmd -s $area" && outdir="${outdir}area_${area}"
     mkdir $outdir
     cmd="$cmd -o $outdir"
-    eval $cmd
-    echo "$outdir,$(silhouette.r $outdir/optics-clustering.csv $file | ruby -e 'line=gets.chomp.split.collect {|i| i.to_f}; sum=line.reduce(:+); puts(sum/line.size)')"
+    echo "${outdir},${1},${minpts},${reach},${maxima},${dist},${area},$(eval $cmd)"
 }
 
 

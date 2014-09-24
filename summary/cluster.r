@@ -8,7 +8,7 @@ library('gplots')
 library('fpc')
 library('cluster')
 a = 0.05 # alpha value
-l = 1.0 # log fold change threshold
+l = 2.0 # log fold change threshold
 
 
 n=100 # of genes
