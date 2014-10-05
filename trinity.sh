@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/env bash
 #PBS -N trinity
 #PBS -r n
 #PBS -V
@@ -24,34 +24,53 @@
 
 
 #set -e
-date
+
+source functions.sh
 #------------------------------------------------
 # Parameters
 #------------------------------------------------
 # CORES
-CORES=20
-JM=4G
+export CORES=20
+export JM=4G
 # Trinity
-
+WORKDIR=/home/mrals/Final
 # Reference genome
-REFGENOME=reference/CAC.txt
+export REFGENOME=$WORKDIR/reference/CAC.txt
 # Reference proteome
-REFPROTEOME=reference/CAC_proteins.fasta
+export REFPROTEOME=$WORKDIR/reference/CAC_proteins.fasta
 #
-BAMDIR=SAM_processed
-INDIR=/home/mrals/Final/final/finalfastq
-REFOUT=/home/mrals/Final/Trinity_ref
-TRINOUT=/home/mrals/Final/Trinity_de_novo
+export BAMDIR=$WORKDIR/SAM_processed
+export INDIR=$WORKDIR/final/finalfastq
+REFOUT=$WORKDIR/Trinity_ref
+TRINOUT=$WORKDIR/Trinity_de_novo
 #TRIN=Trinity.fasta
 RAW=Trin_raw
-TRIN=Trinity-GG.fasta
+export TRIN=Trinity-GG.fasta
+TRINDN=Trinity.fasta
 TMP=tmp
 #RAWDIR=rawdata
 #FILES1=`/usr/bin/ls $RAWDIR/*_1.fastq.gz`
 #FILES2=`/usr/bin/ls $RAWDIR/*_2.fastq.gz`
 R1='$_[0..3] == "@HWI" ? puts("#{$_.chomp/1") : puts($_.chomp)'
 R2='$_[0..3] == "@HWI" ? puts("#{$_.chomp/2") : puts($_.chomp)'
+COMPARE=("NS*15" "NS*75" "NS*150" "NS*270" "BuOH*15" "BuOH*75" "BuOH*150" "BuOH*270" "BA*15" "BA*75" "BA*150" "BA*270")
+
 export R1 R2
+
+##################################################
+#
+# Individual
+#
+##################################################
+
+
+
+for files in ${COMPARE[@]};
+do
+    cd Assemblies
+    mintrin $files $INDIR $BAMDIR $REFGENOME
+    cd ..
+done
 
 ##################################################
 #
@@ -70,8 +89,6 @@ export R1 R2
 # Corrects an issue with all unpaired right reads being reverse complemented in trimfiltercheck
 #zcat $RAW/t2.fq.gz | ruby -ne '$_[0..3] == "@HWI" ? puts($_.chomp+"/2") : puts($_.chomp)' | fastx_reverse_complement -Q33 | gzip >> $RAW/right_combined.fq.gz
 #rm $RAW/t1.fq.gz $RAW/t2.fq.gz
-
-
 ##################################################
 #
 # OPTIONAL-- Reference Trinity
@@ -83,12 +100,7 @@ export R1 R2
 # stupid b.s. to add the g.d. suffixes.
 #samtools view -h $TMP/All.most.bam | ruby -ne '$_[0..2] == "HWI" ? puts($_.split[0]+"/"+$_.split("_")[1][0]+"\t"+$_.split[1..$_.split.size].join("\t")) : puts($_.chomp)' | ruby -ne '$_[0..2] == "HWI" ? (  l=$_.split("\t"); l[1].to_i%2 == 1 ? puts(l.join("\t")) : puts( ([l[0]]+[(l[1].to_i+1).to_s]+l[2..l.size]).join("\t") )  ) : puts($_.chomp)' | samtools view -hbS - > $OUTDIR/All.bam
 
-
-###Trinity --genome $REFGENOME --genome_guided_use_bam $TMP/All.bam --genome_guided_max_intron 1 --genome_guided_sort_buffer 15G --genome_guided_CPU $CORES --SS_lib_type FR --seqType fq --jaccard_clip --JM $JM --CPU $CORES --output $OUTDIR --left $TMP/left.fq --right $TMP/right.fq &> $OUTDIR/ref_assembly.log
-
-Trinity --left $RAW/left_combined.fq.gz --right $RAW/right_combined.fq.gz --jaccard_clip --genome $REFGENOME --genome_guided_max_intron 1 --genome_guided_use_bam $RAW/All.bam --JM $JM --seqType fq --output $REFOUT --genome_guided_CPU 4 --CPU $CORES --SS_lib_type FR
-
-
+#Trinity --left $RAW/left_combined.fq.gz --right $RAW/right_combined.fq.gz --genome $REFGENOME --genome_guided_max_intron 1 --jaccard_clip --genome_guided_use_bam $RAW/All.bam --JM $JM --seqType fq --output $REFOUT --genome_guided_CPU 4 --CPU $CORES --SS_lib_type FR >> $REFOUT/ref_assembly.log 2>&1
 ##################################################
 #
 # De-novo Trinity
@@ -96,50 +108,44 @@ Trinity --left $RAW/left_combined.fq.gz --right $RAW/right_combined.fq.gz --jacc
 # in $OUTDIR
 ##################################################
 #Trinity --seqType fq --JM $JM --left $RAW/left_combined.fq.gz --right $RAW/right_combined.fq.gz --SS_lib_type FR --CPU $CORES --jaccard_clip --output $TRINOUT &> $TRINOUT/denovo_assembly.log
-
-
 ##################################################
 #
 #    A s s e m b l y    M e t r i c s
 #
 ##################################################
-
-
+#  R e f e r e n c e
 #rvm use ruby-2.1.2@transrate
-transrate -a $REFOUT/$TRIN -r $REFPROTEOME -g $REFGENOME -l $RAW/left.fq.gz -i $RAW/right.fq.gz -u $RAW/unpaired.fq.gz -s fr -o $REFOUT/singletons.sam -f $REFOUT/transrate_output.csv -t $CORES -x 0
-
-#transrate -a $TRINOUT/Trinity.fasta -r $REFPROTEOME -g $REFGENOME -l $RAW/left.fq.gz $RAW/right.fq.gz -u $RAW/unpaired.fq.gz -s fr -o $TRINOUT/singletons.sam -f $TRINOUT/transrate_output.csv -t $CORES -x 0
-
-date
-
-
-
+#transrate -a transrate/$TRIN -r $REFPROTEOME -g $REFGENOME -l $RAW/left.fq.gz -i $RAW/right.fq.gz -u $RAW/unpaired.fq.gz -s fr -o transrate/singletons.sam -f transrate/transrate_output.csv -t $CORES -x 0
+# QUICK
+#transrate -a transrate/$TRIN -r $REFPROTEOME -g $REFGENOME -x 1 -f transrate/transrate_output.csv
+#  D e    N o v o
+#transrate -a $TRINOUT/$TRINDN -r $REFPROTEOME -g $REFGENOME -x 1 -f $TRINOUT/transrate_output.csv
 ##################################################
 #
 # FASTA -> GTF
 # This step transforms this assembly into a gtf format assembly, although the features/CDSes
 # of the traditional CAC genes are not mapped back on to these features yet...
 ##################################################
+#blat $REFGENOME $REFOUT/$TRIN -maxIntron=0 $REFOUT/Trinity.psl
+#psl2bed-best $REFOUT/Trinity.psl /dev/stdout | ruby -ne 'puts($_.split("\t")[0...6].join("\t"))' | bedToGenePred stdin stdout| genePredToGtf file stdin $REFOUT/Trinity.gtf
 
-#blat $REFGENOME $OUTDIR/$TRIN -maxIntron=0 $OUTDIR/Trinity.psl
-#psl2bed --headered < $OUTDIR/Trinity.psl | ruby -ne 'puts($_.split("\t")[0...6].join("\t"))' | bedToGenePred stdin stdout| genePredToGtf file stdin $OUTDIR/Trinity.gtf
-
+#blat $REFGENOME $TRINOUT/$TRINDN -maxIntron=0 $TRINOUT/Trinity.psl
+#psl2bed-best $TRINOUT/Trinity.psl /dev/stdout | ruby -ne 'puts($_.split("\t")[0...6].join("\t"))' | bedToGenePred stdin stdout| genePredToGtf file stdin $TRINOUT/Trinity.gtf
 ##################################################
 #
-# Annotation merging
+# GTF merging
 # This step uses a custom ruby script to merge the assembly and the CDS annotation
 ##################################################
+#cat reference/CAC.gtf | grep 'CA_Ct' > reference/CAC.trna.gtf
+#cat reference/CAC.gtf | grep 'CA_Cr' > reference/CAC.rrna.gtf
+#cat reference/CAC.gtf | grep -v 'CA_Cr' | grep -v 'CA_Ct' | grep 'exon' | sed 's/exon/CDS/' > reference/CAC.CDS.gtf
+#      R E F E R E N C E
+#cat $REFOUT/Trinity.gtf | grep -v 'codon' | grep -v 'CDS' | sed 's/stdin/trinity/' | sed 's/exon\t/transcript\t/' | sed 's/|/-/' | ./assemblycurate.rb > $REFOUT/Trinity_filtered.gtf
+#cat $REFOUT/Trinity_filtered.gtf reference/CAC.trna.gtf reference/CAC.rrna.gtf reference/CAC.CDS.gtf | sort -k 1,1 -k 4,4n > $REFOUT/combined.gtf
+#      D E    N O V O
+#cat $TRINOUT/Trinity.gtf | grep -v 'codon' | grep -v 'CDS' | sed 's/stdin/trinity/' | sed 's/exon\t/transcript\t/' | ./assemblycurate.rb > $TRINOUT/Trinity_filtered.gtf
+#cat $REFOUT/Trinity_filtered.gtf reference/CAC.trna.gtf reference/CAC.rrna.gtf reference/CAC.CDS.gtf | sort -k 1,1 -k 4,4n > $TRINOUT/combined.gtf
 
-
-
-
-
-
-##################################################
-#
-# Summary
-# 
-##################################################
 
 
 
