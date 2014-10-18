@@ -46,6 +46,7 @@ STANDARD="#{OUTDIR}/standard.gtf"
 OLD="#{OUTDIR}/standard-cds.gtf"
 OLDGENESLIST="#{OUTDIR}/standard-cds-list.txt"
 STATS="#{OUTDIR}/stats"
+MAXLEN=400
 DIST=40
 
 ################################################
@@ -62,7 +63,7 @@ DIST=40
 def gtfread(infile)
   liszt=[]
   File.open(infile,'r').each {|line| liszt << line.chomp.split}
-  liszt.map! {|x| x[3]=x[3].to_i; x[4]=x[4].to_i; x}
+  liszt.map! {|x| x[3]=x[3].to_i; x[4]=x[4].to_i; x[9]=x[9].chomp(";").gsub(/"/,''); x}
   liszt.sort! {|x,y| x[3]<=>y[3]}
 end
 
@@ -112,12 +113,12 @@ end
 
 def tlength_distr(gtf,outfile)
   File.open(outfile,'w') do |file|
-    gtf.each {|rec| file.puts(rec[4]-rec[3])}
+    gtf.each {|rec| file.puts("#{rec[9]}\t#{rec[4]-rec[3]}")}
   end
 end
 
 def listout(liszt,outfile)
-  File.open(outfile,'w') {|file| liszt.each {|x| file.puts(x)}}
+  File.open(outfile,'w') {|file| liszt.each {|x| x.class == Array ? file.puts(x.join("\t")) : file.puts(x)}}
 end
 
 def operon(transcripts,cds)
@@ -132,12 +133,12 @@ def operon(transcripts,cds)
     if liszt.size > 0
       liszt.sort! {|x,y| x[3]<=>y[3]}
       # If + strand, min CDS start - t[start]   :  t[end] - max CDS end
-      five << (t[6] == "+" ? liszt.map{|x| x[3]}.min-t[3] : t[4]-liszt.map{|x|x[4]}.max)
+      five << [t[9],(t[6] == "+" ? liszt.map{|x| x[3]}.min-t[3] : t[4]-liszt.map{|x|x[4]}.max)]
       # If + strand, t[end] - max CDS end     : min CDS start - t[start]
-      three << (t[6] == "+" ? t[4]-liszt.map{|x|x[4]}.max : liszt.map{|x|x[3]}.min-t[3])
+      three << [t[9],(t[6] == "+" ? t[4]-liszt.map{|x|x[4]}.max : liszt.map{|x|x[3]}.min-t[3])]
       if liszt.size > 1
-        tlength << t[4]-t[3]
-        olength << liszt.size
+        tlength << [t[9],t[4]-t[3]]
+        olength << [t[9],liszt.size]
       end
     end
     dictionary[t[9]]=liszt
@@ -154,7 +155,7 @@ def igrlength_distr(liszt,outfile)
   liszt.each do |plus|
     if plus[6] == "+"
       if old && plus && old[6] == "+"
-        igrs << plus[3]-old[4] if plus[3] > old[4]
+        igrs << [old[9],plus[9],plus[3]-old[4]] if plus[3] > old[4]
       end
       old=plus
     end
@@ -162,13 +163,40 @@ def igrlength_distr(liszt,outfile)
   old=nil
   liszt.each do |minus|
     if minus[6] == "-"
-      if old && minus && old[6] == "-" && minus[6] == "-"
-        igrs << minus[3]-old[4] if minus[3] > old[4]
+      if old && minus && old[6] == "-"
+        igrs << [old[9],minus[9],minus[3]-old[4]] if minus[3] > old[4]
       end
       old=minus
     end
   end
   listout(igrs,outfile)
+end
+
+def intrautr(standard,cds,outfile)
+  iutr=[]
+  chrom=(cds.select {|x| x[0] == "NC_003030.1"}).sort {|x,y| x[3]<=>y[3]}
+  plas=(cds.select {|x| x[0] == "NC_001988.2"}).sort {|x,y| x[3]<=>y[3]}
+  standard.each do |t|
+    if t[0] == "NC_003030.1"
+      tmp=chrom
+    else
+      tmp=plas
+    end
+    i=(0..tmp.size).to_a.bsearch {|x| tmp[x][3] >= t[3]}
+    cdses=[]
+    while tmp[i] && tmp[i][3] >= t[3] && tmp[i][4] <= t[4]
+      if tmp[i][6] == t[6]
+        cdses << tmp[i]
+      end
+      i+=1
+    end
+    if cdses.size > 1
+      cdses=cdses.sort {|x,y| x[3]<=>y[3]}
+      left=cdses[0][4]
+      (cdses.size-1).times {|x| iutr << [t[9].chomp(";"),cdses[x+1][3]-left]; left=cdses[x+1][4]}
+    end
+  end
+  File.open(outfile,'w') {|file| iutr.each {|x,y| file.puts("#{x}\t#{y}")}}
 end
 
 def antisense(liszt,outfile)
@@ -181,7 +209,7 @@ def antisense(liszt,outfile)
         left=[t1[3],t2[3]].max
         right=[t1[4],t2[4]].min
         l1,l2=[t1[4]-t1[3],t2[4]-t2[3]]
-        if (l1 < 400 || l2 < 400) && right-left >= DIST
+        if (l1 < MAXLEN || l2 < MAXLEN) && right-left >= DIST
           one,two=[t1[9].chomp(";").gsub(/"/,''),t2[9].chomp(";").gsub(/"/,'')]
           new=[]
           l1 > l2 ? new=[two,one] : new=[one,two]
@@ -193,14 +221,15 @@ def antisense(liszt,outfile)
   File.open(outfile,'w') {|file| pairs.each {|x| file.puts(x.join("\t"))}}
 end
 
-def stats(total,novel,reference,cds,refcds)
+def stats(total,novel,standard,cds,refcds)
   `mkdir #{OUTDIR}/stats`
   tlength_distr(novel,STATS+"/novel.len")
-  tlength_distr(reference,STATS+"/standard.len")
+  tlength_distr(standard,STATS+"/standard.len")
   tlength_distr(refcds,STATS+"/refcds.len")
-  operon(reference,cds)
+  operon(standard,cds)
   igrlength_distr(total,STATS+"/igr.len")
   igrlength_distr(refcds,STATS+"/refigr.len")
+  intrautr(standard,cds,STATS+"/intrautr.len")
   antisense(total,STATS+"/antisense.pairs")
 end
 

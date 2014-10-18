@@ -44,7 +44,9 @@ n=100 # of genes
 
 #   D A T A      P R E P
 ba<-2^regcounts[rownames(subset(stress[[2]],subset=stress[[2]]$padj < a & abs(stress[[2]]$log2FoldChange) > l)),]
-ba<-(ba-rowMeans(ba))/apply(ba,1,sd)
+#ba<-(ba-rowMeans(ba))/apply(ba,1,sd)
+
+
 nba=length(rownames(ba))
 kba=sqrt(nba/2)
 bascaled<-t(scale(t(as.matrix(ba))))
@@ -53,6 +55,10 @@ rownames(bascaled)<-rownames(ba)
 bas<-cor(t(bascaled),method="pearson")
 bap<-cor(t(bascaled),method="spearman")
 bak<-cor(t(bascaled),method="kendall")
+rbas<-cor(t(ba),method="pearson")
+rbap<-cor(t(ba),method="spearman")
+rbak<-cor(t(ba),method="kendall")
+
 
 
 #    C L U S T E R I N G
@@ -81,10 +87,14 @@ dr<-dbscan(badist,0.15,method="dist",showplot=TRUE)
 
 
 write.table(ba,file="clustering/raw/raw.csv",sep=",",quote=F,row.names=T,col.names=F)
+write.table(rbap,file="clustering/rpearson/rpearson.csv",sep=",",quote=F,row.names=T,col.names=F)
+write.table(rbas,file="clustering/rspearman/rspearman.csv",sep=",",quote=F,row.names=T,col.names=F)
+write.table(rbak,file="clustering/rkendall/rkendall.csv",sep=",",quote=F,row.names=T,col.names=F)
+
+write.table(bascaled,file="clustering/scaled/scaled.csv",sep=",",quote=F,row.names=T,col.names=F)
 write.table(bap,file="clustering/pearson/pearson.csv",sep=",",quote=F,row.names=T,col.names=F)
 write.table(bas,file="clustering/spearman/spearman.csv",sep=",",quote=F,row.names=T,col.names=F)
 write.table(bak,file="clustering/kendall/kendall.csv",sep=",",quote=F,row.names=T,col.names=F)
-write.table(bascaled,file="clustering/scaled/scaled.csv",sep=",",quote=F,row.names=T,col.names=F)
 
 
 

@@ -28,7 +28,7 @@ CORES=5
 
 # DATA, MINPTS, REACH (minimum reachability distance), MAXIMA (maxima ratio),
 # and DISTS are options for the optics algorithm, described @ http://github.com/MatthewRalston/OPTICS-Automatic-Clustering
-declare -a DATA=('raw' 'scaled' 'pearson' 'spearman' 'kendall')
+declare -a DATA=('raw' 'scaled' 'pearson' 'spearman' 'kendall' 'rkendall' 'rspearman' 'rpearson')
 FILES=(`echo ${DATA[@]} | ruby -e 'l=gets.chomp; puts(l.split.map{|x|x+"/"+x+".csv"}.join(" "))'`)
 declare -a MINPTS=({2..8..2})
 declare -a REACH=(0.0{0..8..2}{1..9..2})

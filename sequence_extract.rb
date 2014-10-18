@@ -1,10 +1,10 @@
-#!/home/mrals/.rvm/rubies/ruby-2.0.0-p247/bin/ruby
+#!/home/mrals/.rvm/rubies/ruby-2.1.2/bin/ruby
 =begin
 ------------------------------------------------------------------------------
 --                                                                          --
 --                                MATTHEW RALSTON                           --
 --                                                                          --
---                              C O N T A I N E D. R B                      --
+--                               S K E L E T O N . R B                      --
 --                                                                          --
 ------------------------------------------------------------------------------
 -- TITLE                                                                    --
@@ -12,9 +12,8 @@
 --  Summer 2013                                                             --
 --                                                                          --
 ------------------------------------------------------------------------------
--- This file is designed to identify items in a list that are contained in  --
--- other items of the list. This is meant to find the transcripts that are  --
--- fully contained in other transcripts.
+-- This file is designed to extract genomic sequences (nt) from a genome    --
+-- given a gtf as input.
 --                                                                          --
 ------------------------------------------------------------------------------
 =end
@@ -24,7 +23,7 @@
 #               R E Q U I R E
 #
 ################################################
-
+require 'bio'
 
 
 
@@ -34,6 +33,9 @@
 #               U S E R    V A R I A B L E S
 #
 ################################################
+GTF,FASTA,OLD=ARGV[0..2]
+usage='sequence-extract.rb annotation.gtf genomic-sequence.fasta'
+puts(usage) if GTF=="-h"
 
 
 
@@ -48,42 +50,41 @@
 
 ################################################
 
-
-def gtfread
-  liszt=[]
-  while line=STDIN.gets
-    liszt << line.chomp.split
+def gtfread(infile)
+  gtf=[]
+  File.open(infile,'r').each do |line|
+    gtf << line.chomp.split
   end
-  liszt.map! {|x| x[3]=x[3].to_i; x[4]=x[4].to_i; x}
-  liszt.sort! {|x,y| x[3]<=>y[3]}
+  gtf.map! {|x| x[3]=x[3].to_i;x[4]=x[4].to_i;x[9]=x[9].chomp(";").gsub(/"/,'');x}
 end
 
-def contained?(l1,l2)
-  output=[]
-  l1.each do |g1|
-    l2.each do |g2|
-      if (g2[3] <= g1[3] && g1[4] <= g2[4] && g1[0] == g2[0] && g1[6] == g2[6] && g1 != g2)
-
-        output << g1
-        break
-      end
-    end
+def extract(gtf,fastas)
+  seqs={}
+  chrom,plas=fastas.keys
+  gtf.each do |gene|
+    seq=(gene[0] == chrom ? fastas[chrom][gene[3]-1..gene[4]-1] : fastas[plas][gene[3]-1..gene[4]-1])
+    seq=(gene[6] == "+" ? seq : seq.complement)
+    seqs[gene[9]]=seq
   end
-  output
+  seqs
 end
 
-def gtfout(records,liszt)
-  records.delete_if {|x| liszt.include?(x)}
-  records.each do |x|
-    STDOUT.puts(x.join("\t"))
-  end
+
+def fastaout(fastas)
+  fastas.each {|id,seq| STDOUT.puts(">#{id}\n#{seq.upcase}")}
 end
 
 def main
-  gtf=gtfread
-  contained=contained?(gtf,gtf)
-  gtfout(gtf,contained)
+  gtf=gtfread(GTF)
+  fastas={}; Bio::FastaFormat.open(FASTA).each_entry {|f| fastas[f.entry_id]=Bio::Sequence::NA.new(f.seq)}
+  seqs=extract(gtf,fastas)
+  oldfastas={}; Bio::FastaFormat.open(OLD).each_entry {|f| oldfastas[f.entry_id]=Bio::Sequence::NA.new(f.seq)}
+  test=seqs.keys[0]
+  #puts("#{test}:\n#{seqs[test]}\nvs:\n#{oldfastas[test]}")
+  fastaout(seqs)
 end
+
+
 
 
 #*****************************************************************************#

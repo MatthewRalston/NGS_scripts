@@ -48,10 +48,10 @@ mraw<-melt(rawcounts);mnorm<-melt(normcounts);mreg<-melt(regcounts);
 # Correlations [raw, normalized, regularized]
 source("summary/correlation.r")
 # Jitter plots showing normalization
-p1<-ggplot(melt(rawcounts[,c(21,26,22,24)]+1),aes(x=variable,y=value))+geom_jitter()+scale_y_log10(breaks=10**(0:4),labels=trans_format('log10',math_format(10^.x)))+annotation_logticks(base=10,sides='l')+stat_summary(fun.y=median,fun.ymax=top.quartile,fun.ymin=bottom.quartile,geom='crossbar',colour='red')+ylab('Counts')+theme(axis.title.x=element_blank())+ggtitle("Raw Counts")
-p2<-ggplot(melt(normcounts[,c(21,26,22,24)]+1),aes(x=variable,y=value))+geom_jitter()+scale_y_log10(breaks=10**(0:4),labels=trans_format('log10',math_format(10^.x)))+annotation_logticks(base=10,sides='l')+stat_summary(fun.y=median,fun.ymax=top.quartile,fun.ymin=bottom.quartile,geom='crossbar',colour='red')+ylab('Normalized Counts')+theme(axis.title.x=element_blank())+ggtitle("Normalized Counts")
+p1<-ggplot(melt(rawcounts[,c(21,27,22,28)]+1),aes(x=variable,y=value))+geom_jitter()+scale_y_log10(breaks=10**(0:4),labels=trans_format('log10',math_format(10^.x)))+annotation_logticks(base=10,sides='l')+stat_summary(fun.y=median,fun.ymax=top.quartile,fun.ymin=bottom.quartile,geom='crossbar',colour='red')+ylab('Counts')+theme(axis.title.x=element_blank(),axis.text.y=element_text(colour="black"),axis.text.x=element_text(colour="black"))+ggtitle("Raw Counts")
+p2<-ggplot(melt(normcounts[,c(21,27,22,28)]+1),aes(x=variable,y=value))+geom_jitter()+scale_y_log10(breaks=10**(0:4),labels=trans_format('log10',math_format(10^.x)))+annotation_logticks(base=10,sides='l')+stat_summary(fun.y=median,fun.ymax=top.quartile,fun.ymin=bottom.quartile,geom='crossbar',colour='red')+ylab('Normalized Counts')+theme(axis.title.x=element_blank(),axis.text.y=element_text(colour="black"),axis.text.x=element_text(colour="black"))+ggtitle("Normalized Counts")
 p<-arrangeGrob(p1,p2,ncol=2)
-ggsave("summary/images/normalization.png",p)
+ggsave("summary/images/Normalization.png",p)
 
 
 

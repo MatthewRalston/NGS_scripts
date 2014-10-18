@@ -4,7 +4,7 @@
 #PBS -V
 #PBS -l nodes=biohen29:ppn=20
 #PBS -l walltime=100:00:00
-#PBS -l mem=100gb
+#PBS -l mem=120gb
 #PBS -d /home/mrals/Final
 #------------------------------------------------
 # Title: trinity.sh
@@ -31,7 +31,7 @@ source functions.sh
 #------------------------------------------------
 # CORES
 export CORES=20
-export JM=4G
+export JM=5G
 # Trinity
 WORKDIR=/home/mrals/Final
 # Reference genome
@@ -41,8 +41,9 @@ export REFPROTEOME=$WORKDIR/reference/CAC_proteins.fasta
 #
 export BAMDIR=$WORKDIR/SAM_processed
 export INDIR=$WORKDIR/final/finalfastq
-REFOUT=$WORKDIR/Trinity_ref
-TRINOUT=$WORKDIR/Trinity_de_novo
+#REFOUT=$WORKDIR/Trinity_ref
+#REFOUT=$WORKDIR/Trinity_paired
+#REFOUT=$WORKDIR/Trinity_de_novo
 #TRIN=Trinity.fasta
 RAW=Trin_raw
 export TRIN=Trinity-GG.fasta
@@ -65,12 +66,12 @@ export R1 R2
 
 
 
-for files in ${COMPARE[@]};
-do
-    cd Assemblies
-    mintrin $files $INDIR $BAMDIR $REFGENOME
-    cd ..
-done
+#for files in ${COMPARE[@]};
+#do
+#    cd Assemblies
+#    mintrin $files $INDIR $BAMDIR $REFGENOME
+#    cd ..
+#done
 
 ##################################################
 #
@@ -94,13 +95,19 @@ done
 # OPTIONAL-- Reference Trinity
 # Use BAM files (instead of fastq files
 ##################################################
+# ALL DATA
 #samtools merge $TMP/All.merged.bam `/usr/bin/ls -d $BAMDIR/*.3.bam` 
 #samtools sort -o $TMP/All.merged.bam $TMP/All.most > $TMP/All.most.bam
 #rm $TMP/All.merged.bam
 # stupid b.s. to add the g.d. suffixes.
-#samtools view -h $TMP/All.most.bam | ruby -ne '$_[0..2] == "HWI" ? puts($_.split[0]+"/"+$_.split("_")[1][0]+"\t"+$_.split[1..$_.split.size].join("\t")) : puts($_.chomp)' | ruby -ne '$_[0..2] == "HWI" ? (  l=$_.split("\t"); l[1].to_i%2 == 1 ? puts(l.join("\t")) : puts( ([l[0]]+[(l[1].to_i+1).to_s]+l[2..l.size]).join("\t") )  ) : puts($_.chomp)' | samtools view -hbS - > $OUTDIR/All.bam
-
+#samtools view -h $TMP/All.most.bam | ruby -ne '$_[0..2] == "HWI" ? puts($_.split[0]+"/"+$_.split("_")[1][0]+"\t"+$_.split[1..$_.split.size].join("\t")) : puts($_.chomp)' | ruby -ne '$_[0..2] == "HWI" ? (  l=$_.split("\t"); l[1].to_i%2 == 1 ? puts(l.join("\t")) : puts( ([l[0]]+[(l[1].to_i+1).to_s]+l[2..l.size]).join("\t") )  ) : puts($_.chomp)' | samtools view -hbS - > $RAW/All.bam
 #Trinity --left $RAW/left_combined.fq.gz --right $RAW/right_combined.fq.gz --genome $REFGENOME --genome_guided_max_intron 1 --jaccard_clip --genome_guided_use_bam $RAW/All.bam --JM $JM --seqType fq --output $REFOUT --genome_guided_CPU 4 --CPU $CORES --SS_lib_type FR >> $REFOUT/ref_assembly.log 2>&1
+
+# PAIRED ONLY
+#samtools view -h $TMP/All.most.bam | ruby -ne '$_[0..2] == "HWI" ? puts($_.split[0]+"/"+$_.split("_")[1][0]+"\t"+$_.split[1..$_.split.size].join("\t")) : puts($_.chomp)' | ruby -ne '$_[0..2] == "HWI" ? (  l=$_.split("\t"); l[1].to_i%2 == 1 ? puts(l.join("\t")) : puts( ([l[0]]+[(l[1].to_i+1).to_s]+l[2..l.size]).join("\t") )  ) : puts($_.chomp)' | samtools view -hbS -f 2 - > $RAW/All.bam
+#Trinity --left $RAW/left.fq.gz --right $RAW/right.fq.gz --genome $REFGENOME --genome_guided_max_intron 1 --jaccard_clip --genome_guided_use_bam $RAW/All.bam --JM $JM --seqType fq --output $REFOUT --genome_guided_CPU 4 --CPU $CORES --SS_lib_type FR >> $REFOUT/ref_assembly.log 2>&1
+
+
 ##################################################
 #
 # De-novo Trinity
@@ -126,8 +133,26 @@ done
 # This step transforms this assembly into a gtf format assembly, although the features/CDSes
 # of the traditional CAC genes are not mapped back on to these features yet...
 ##################################################
-#blat $REFGENOME $REFOUT/$TRIN -maxIntron=0 $REFOUT/Trinity.psl
-#psl2bed-best $REFOUT/Trinity.psl /dev/stdout | ruby -ne 'puts($_.split("\t")[0...6].join("\t"))' | bedToGenePred stdin stdout| genePredToGtf file stdin $REFOUT/Trinity.gtf
+#sed -i 's/|/-/' $REFOUT/$TRIN
+
+
+#bwa mem -t $CORES $REFGENOME $REFOUT/$TRIN | samtools view -Sbh - | samtools sort - $REFOUT/Trinity
+# Indexing the alignment
+#samtools index $REFOUT/Trinity.bam
+# Conversion to gtf, gene_ids will be Trinity transcripts, though
+#samtools view -bh $REFOUT/Trinity.bam |  bam2bed | ruby -ne 'puts($_.split("\t")[0...6].join("\t"))' | bedToGenePred stdin stdout| genePredToGtf file stdin $REFOUT/Trin-bwa.gtf
+
+
+blat $REFGENOME $REFOUT/$TRIN -maxIntron=0 $REFOUT/Trinity.psl
+psl2bed-best $REFOUT/Trinity.psl /dev/stdout | ruby -ne 'puts($_.split("\t")[0...6].join("\t"))' | bedToGenePred stdin stdout| genePredToGtf file stdin $REFOUT/Trin-blat.gtf
+
+
+blastn -query $REFOUT/$TRIN -db $REFGENOME -reward 2 -penalty -3 -gapopen 6 -gapextend 2 -outfmt 6 > $REFOUT/Trinity-GG.blast
+./sortblast.rb
+# The curate partial and combine with unique transcripts
+#cat $REFOUT/blastcombo.gtf | ./assemblycurate.rb | sort -k 1,1 -k4,4n > $REFOUT/Trin-blast.gtf
+
+
 
 #blat $REFGENOME $TRINOUT/$TRINDN -maxIntron=0 $TRINOUT/Trinity.psl
 #psl2bed-best $TRINOUT/Trinity.psl /dev/stdout | ruby -ne 'puts($_.split("\t")[0...6].join("\t"))' | bedToGenePred stdin stdout| genePredToGtf file stdin $TRINOUT/Trinity.gtf
@@ -140,7 +165,7 @@ done
 #cat reference/CAC.gtf | grep 'CA_Cr' > reference/CAC.rrna.gtf
 #cat reference/CAC.gtf | grep -v 'CA_Cr' | grep -v 'CA_Ct' | grep 'exon' | sed 's/exon/CDS/' > reference/CAC.CDS.gtf
 #      R E F E R E N C E
-#cat $REFOUT/Trinity.gtf | grep -v 'codon' | grep -v 'CDS' | sed 's/stdin/trinity/' | sed 's/exon\t/transcript\t/' | sed 's/|/-/' | ./assemblycurate.rb > $REFOUT/Trinity_filtered.gtf
+#cat $REFOUT/Trinity.gtf | grep -v 'codon' | grep -v 'CDS' | sed 's/stdin/trinity/' | sed 's/exon\t/transcript\t/' | sed 's/|/-/' | ./assemblycurate.rb | sort -k 1,1 -k4,4n > $REFOUT/Trinity_filtered.gtf
 #cat $REFOUT/Trinity_filtered.gtf reference/CAC.trna.gtf reference/CAC.rrna.gtf reference/CAC.CDS.gtf | sort -k 1,1 -k 4,4n > $REFOUT/combined.gtf
 #      D E    N O V O
 #cat $TRINOUT/Trinity.gtf | grep -v 'codon' | grep -v 'CDS' | sed 's/stdin/trinity/' | sed 's/exon\t/transcript\t/' | ./assemblycurate.rb > $TRINOUT/Trinity_filtered.gtf
