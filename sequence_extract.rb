@@ -33,7 +33,8 @@ require 'bio'
 #               U S E R    V A R I A B L E S
 #
 ################################################
-GTF,FASTA,OLD=ARGV[0..2]
+#GTF,FASTA,OLD=ARGV[0..2]
+GTF,FASTA=ARGV[0..1]
 usage='sequence-extract.rb annotation.gtf genomic-sequence.fasta'
 puts(usage) if GTF=="-h"
 
@@ -78,8 +79,8 @@ def main
   gtf=gtfread(GTF)
   fastas={}; Bio::FastaFormat.open(FASTA).each_entry {|f| fastas[f.entry_id]=Bio::Sequence::NA.new(f.seq)}
   seqs=extract(gtf,fastas)
-  oldfastas={}; Bio::FastaFormat.open(OLD).each_entry {|f| oldfastas[f.entry_id]=Bio::Sequence::NA.new(f.seq)}
-  test=seqs.keys[0]
+  #oldfastas={}; Bio::FastaFormat.open(OLD).each_entry {|f| oldfastas[f.entry_id]=Bio::Sequence::NA.new(f.seq)}
+  #test=seqs.keys[0]
   #puts("#{test}:\n#{seqs[test]}\nvs:\n#{oldfastas[test]}")
   fastaout(seqs)
 end

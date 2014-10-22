@@ -150,7 +150,7 @@ psl2bed-best $REFOUT/Trinity.psl /dev/stdout | ruby -ne 'puts($_.split("\t")[0..
 blastn -query $REFOUT/$TRIN -db $REFGENOME -reward 2 -penalty -3 -gapopen 6 -gapextend 2 -outfmt 6 > $REFOUT/Trinity-GG.blast
 ./sortblast.rb
 # The curate partial and combine with unique transcripts
-#cat $REFOUT/blastcombo.gtf | ./assemblycurate.rb | sort -k 1,1 -k4,4n > $REFOUT/Trin-blast.gtf
+#cat $REFOUT/transcripts-unique.gtf | ./assemblycurate.rb | sort -k 1,1 -k4,4n > $REFOUT/Trin-blast.gtf
 
 
 

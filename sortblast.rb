@@ -132,7 +132,7 @@ def gtfout(outfile,dict)
   File.open(outfile,'w') do |file|
     dict.each do |key,value|
       value.each do |liszt|
-        line=liszt[0...-1].join("\t")+"\tgeneid=#{key};" + ATTR.zip(liszt[-1]).flatten.join('')
+        line=liszt[0...-1].join("\t")+"\tgene_id=\"#{key}\";" + ATTR.zip(liszt[-1]).flatten.join('')
         file.puts(line)
       end
     end

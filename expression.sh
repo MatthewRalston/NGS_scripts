@@ -46,7 +46,8 @@ CUFFQUANT=Cuffquant
 # REFERENCE: This is the reference annotation that 
 # will be used to calculate gene expression.
 #REFERENCE=reference/ref.gtf
-REFERENCE=reference/CAC.gtf
+#REFERENCE=reference/CAC.gtf
+REFERENCE=annotation/Trin-blast.gtf
 #REFERENCE=summary/summary2000.gtf
 export REFERENCE
 # MASK: This is an annotation file of genes that will
@@ -74,8 +75,11 @@ NS75='Cuffquant/NS75A/abundances.cxb,Cuffquant/NS75B/abundances.cxb'
 NS270='Cuffquant/NS270A/abundances.cxb'
 # PICARD: This is the location of picard jar files, used for 
 # RNAseq metrics.
+
 PICARD=/usr/local/picard-tools-1.67
 export PICARD
+# TYPE: This is the type of feature to count for HTSeqcount
+export TYPE="transcript"
 # TMPD: This is a location for temporary files.
 TMPD=/home/mrals/Final/tmp/
 export TMPD
@@ -89,25 +93,25 @@ export TMPD
 #TEMPBAM=`/usr/bin/ls $TMPD/*.tempbam`
 #parallel -j$CORES 'java -jar $PICARD/MarkDuplicates.jar INPUT={} OUTPUT=/dev/stdout METRICS_FILE=/dev/null REMOVE_DUPLICATES=true | samtools sort -n - $TMPD/{/.}' ::: $TEMPBAM
 #rm $TMPD/*.tempbam
-BAM=`/usr/bin/ls $TMPD/*.3.bam`
+#BAM=`/usr/bin/ls $TMPD/*.3.bam`
 # paired
-parallel -j$CORES 'samtools view -h -f 1 {} | htseq-count -f sam -a 20 -r name -m intersection-nonempty -s yes - $REFERENCE > $EXPRDIR/{/.}.counts.paired' ::: $BAM
+parallel -j$CORES 'samtools view -h -f 1 {} | htseq-count -f sam -t $TYPE -a 20 -r name -m intersection-nonempty -s yes - $REFERENCE > $EXPRDIR/{/.}.counts.paired' ::: $BAM
 # unpaired
-parallel -j$CORES 'samtools view -h -F 1 {} | htseq-count -f sam -a 20 -r name -m intersection-nonempty -s yes - $REFERENCE > $EXPRDIR/{/.}.counts.unpaired' ::: $BAM
+parallel -j$CORES 'samtools view -h -F 1 {} | htseq-count -f sam -t $TYPE -a 20 -r name -m intersection-nonempty -s yes - $REFERENCE > $EXPRDIR/{/.}.counts.unpaired' ::: $BAM
 #rm $TMPD/*.3.bam
 
-./countsummary.rb
+#./countsummary.rb
 
 
 #########################     CUFFQUANT
 
-for file in $BAM
-do
-    f=${file##*/};f=${f%*.*.*}
+#for file in $BAM
+#do
+#    f=${file##*/};f=${f%*.*.*}
     #mkdir $CIRC/$f
     #mkdir $CUFFQUANT/$f
     #cuffquant -o $CUFFQUANT/$f -v -p $CORES -M $MASK -b $REFFASTA -u --library-type fr-firststrand $REFERENCE $file
-done
+#done
 
 #########################     CUFFNORM
 #cuffnorm -p $CORES -o $CUFFQUANT -L NS30,NS75,NS270 --library-type fr-firststrand --library-norm-method geometric $REFERENCE $NS30 $NS75 $NS270

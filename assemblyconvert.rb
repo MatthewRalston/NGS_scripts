@@ -30,11 +30,6 @@
 cat Trinity_ref/Trinity_filtered.gtf | sed 's/transcript\t/gene\t/' | ruby -ne 'line=$_.chomp.split; puts(line[0..7].join("\t")+"\t"+line[8..-1].join(" "))' | sort -k 1,1 -k4,4n > Trinity_ref/Trin_as_genes.gtf
 --
 --
--- Then, genbank files must be created separately because fml.
--- cat Trinity_ref/Trin_as_genes.gtf | grep 'NC_003030' > Trinity_ref/chrom.gtf
--- cat Trinity_ref/Trin_as_genes.gtf | grep 'NC_001988' > Trinity_ref/plas.gtf
--- seqret -sequence reference/chrom.ffn -feature -fformat gff -fopenfile Trinity_ref/chrom.gtf -osformat genbank -auto
--- seqret -sequence reference/plas.ffn -feature -fformat gff -fopenfile Trinity_ref/plas.gtf -osformat genbank -auto
 --
 -- Then, both genbank files must be concatenated into one file
 --
@@ -61,19 +56,23 @@ require 'bio'
 #               U S E R    V A R I A B L E S
 #
 ################################################
+WORKDIR="Trinity_paired"
+ANNOTATEDIR="Trinotate2"
 FASTA="reference/CAC.txt"
-TRANSDECODER="Trinotate/Trin-blast.complete.cds"
-TRANSCRIPTS="Trinity_paired/Trin-blast.gtf"
-
-TRANSCRIPTFASTA="Trinity_paired/Trin-blast.fasta"
-CDSFASTA="Trinotate/Trin-blast.fasta.transdecoder.complete.cds.fasta"
+TRANSDECODER="#{ANNOTATEDIR}/Trin-blast.complete.cds"
+TRANSCRIPTS="#{WORKDIR}/Trin-blast.gtf"
+TRANSCRIPTFASTA="#{WORKDIR}/Trin-blast.fasta"
+CDSFASTA="#{ANNOTATEDIR}/Trin-blast.fasta.transdecoder.complete.cds.fasta"
 STOPS=["TAA","TAG","TGA"]
-
-
+FINALCDS="#{ANNOTATEDIR}/Trin-blast.annotation.gtf"
+FINALCHROM="#{ANNOTATEDIR}/Trin-blast.annotation.chrom.gtf"
+FINALPLAS="#{ANNOTATEDIR}/Trin-blast.annotation.plas.gtf"
+#STANDARDCDS="#{WORKDIR}/standard-cds.gtf"
+STANDARDCDS="#{WORKDIR}/consensus.cds.space.gtf"
 PREFIX=" "*21
 TEMP="combined.genbank"
-CHROM="reference/chrom.ffn"
-PLAS="reference/plas.ffn"
+CHROMFASTA="reference/chrom.ffn"
+PLASFASTA="reference/plas.ffn"
 CHROMGB="reference/chromgenbank.txt"
 PLASGB="reference/plasgenbank.txt"
 CHROMFEATURE='      source          1..3940880
@@ -94,7 +93,9 @@ PLASFEATURE='     source          1..192000
                      with the loss of the capacity to produce acetone and
                      butanol and that the genes involved in solvent formation
                      reside on pSOL1"'
-OUTFILE="new.genbank"
+TRANSDECODEROUT="#{ANNOTATEDIR}/transdecoder.rast"
+MERGEDOUT="#{ANNOTATEDIR}/merged.rast"
+STANDARDOUT="#{ANNOTATEDIR}/standard.rast"
 Chrom="NC_003030"
 
 ################################################
@@ -149,15 +150,19 @@ def converter(transcriptlist,transdecoder,genome)
     seq=genome[chrom][l..r]
     seq=feature[6] == "+" ? seq[feature[3]..feature[4]] : seq[seq.size-feature[4]-1..seq.size-feature[3]-1].complement
     #puts(seq)
+    #puts("T in CDS:#{l+feature[3]} - #{l + feature[4]}")
     if feature[6] == "+" && seq[0..2]=="atg" && seq[-3..-1].upcase == feature[-1]
-      l=l+feature[3]
-      r=l+feature[4]
+      r=l+feature[4]+1
+      l=l+feature[3]+1
     elsif feature[6] == "-" && seq[0..2] == "atg" && seq[-3..-1].upcase == feature[-1]
-      l=r-feature[4]
-      r=r-feature[3]
+      l=r-feature[4]+1
+      r=r-feature[3]+1
     else
       raise "ERROR: #{feature.to_s}"
     end
+    s=genome[chrom][l-1..r-1]
+    s=s.complement if feature[6] == "-"
+    raise "error: #{feature.to_s}" unless seq==s
     feature[3..4]=[l,r]
 
     feature.include?("Parent") ? feature[feature.index("Parent")+1]=feature[0] : (i=feature.index("ID"); feature[i+1]=feature[i+1].split("|")[0])
@@ -170,33 +175,62 @@ end
 def gtfout(gtf,outfile)
   File.open(outfile,'w') do |file|
     gtf.each do |x|
-      file.puts(x[0..7].join("\t")+"\t"+x[8..-1].join(" "))
+      line=x[0..7].join("\t")+"\t"+x[8..-1].join(" ")
+      line=line.split(" Parent ").join("; Parent=").split("ID ").join("ID=")+";"
+      file.puts(line)
     end
   end
 end
 
+def seqret(fasta,gff)
+ `seqret -sequence #{fasta} -feature -fformat gff -fopenfile #{gff} -osformat genbank -auto`
+end
+
 def proteinextract(gtf,fastas)
-  
+  peptides={}
+  gtf.each do |x|
+    seq=fastas[x[0]][x[3]-1..x[4]-1]
+    seq=seq.complement if gtf[6] == "-"
+    raise "Transcript size error\n#{seq}\nsize#{seq.size}\n#{seq.size%3}" unless seq.size%3==0
+    key=x[9]#[4..-1].gsub(/\|/,"-").gsub(/\./,"-")
+    peptides[key]=seq.translate
+  end
+  peptides
 end
 
 
-def readnwrite(input,output,gtf)
-  current=''
+def readnwrite(input,output,gtf,proteins)
+  currentchrom=''
+  features=false
+  currentfeature=''
+  chromrecords=gtf.select{|x| x[0]==Chrom}
+  plasrecords=gtf.select{|x| x[0]!=Chrom}
   File.open(output,'w') do |file|
     File.open(input,'r').each do |line|
       if line.include?('LOCUS')
-        current = locus(line)
+        currentfeature=''
+        features=false
+        currentchrom = locus(line)
         file.puts(line)
       elsif line.include?('DEFINITION')
         file.puts(line)
-        addheader(current,file)
+        addheader(currentchrom,file)
       elsif line.include?('FEATURES')
         file.puts(line)
-        featureprefix(current,file)
-      elsif line.include?("gene")
+        featureprefix(currentchrom,file)
+        features=true
+      elsif line.include?("CDS") 
+        currentfeature="CDS"
         file.puts(line)
-        temp=(current.include?(Chrom) ? gtf.select{|x| x[0].include?(Chrom)} : gtf.select{|x| !x[0].include?(Chrom)})
-        addfeature(current,line,temp,file)
+      elsif line.include?("gene")
+        currentfeature="gene"
+        file.puts(line)
+      elsif line.include?('cds') && line.include?("locus_tag")
+        file.puts(line)
+        temp=PREFIX+"/translation=\""
+        key=line.chomp.split("=")[1].gsub(/"/,'')
+        temp+=proteins[key]+"\""
+        file.puts(temp)
       else
         file.puts(line)
       end
@@ -211,9 +245,9 @@ end
 
 def addheader(current,file)
   if current.include?("NC_003030")
-    file.puts(File.open(CHROM,'r').read)
+    file.puts(File.open(CHROMGB,'r').read)
   elsif current.include?("NC_001988")
-    file.puts(File.open(PLAS,'r').read)
+    file.puts(File.open(PLASGB,'r').read)
   else
     raise "Unknown chromosome in addheader: #{current}"
   end
@@ -229,43 +263,51 @@ def featureprefix(current,file)
   end
 end
 
-
-def addfeature(current,line,gtf,file)
-  puts("FAIL") if current != gtf[0][0]
-  c=0
-  strand=(line.include?("complement") ? "-" : "+")
-  coords=(strand == "+" ? line.split[1].split(".").map{|x|x.to_i} : line.split[1].split("(")[1].chomp(")").split(".").map{|x|x.to_i})
-  coords=[coords[0],coords[-1]]
-  start=(0..gtf.size).to_a.bsearch {|x| gtf[x][3] >= coords[0]}
-  until (gtf[start+c][3] == coords[0] && gtf[start+c][4] == coords[1])
-    c += 1
-    raise "ERROR in add feature, no matching: #{line}" if c > 4000
-  end
-
-  file.puts(PREFIX+"/locus_tag=#{gtf[start+c][9].chomp(";")}")
-end
-
 def main
 # Step 1. Load the reference genome fasta, transdecoder gtf, and transcript alignment gtf.
 
   transdecoder=gtfread(TRANSDECODER).map {|x| x[-1]=x[-1].split(/[;=]/);x.flatten}
-  transcripts=gtfread(TRANSCRIPTS).map {|x| x[9]=x[9].chomp(";");x}
+  transcripts=gtfread(TRANSCRIPTS).map {|x| x[8..9]=x[8].chomp(";").gsub(/"/,'').split("=");x}
   genome={}; Bio::FastaFormat.open(FASTA).each_entry {|f| genome[f.entry_id]=Bio::Sequence::NA.new(f.seq)}
   cds={};Bio::FastaFormat.open(CDSFASTA).each_entry {|f| cds[f.entry_id.gsub(/~/,"|")]=f.seq}
   transeq={};Bio::FastaFormat.open(TRANSCRIPTFASTA).each_entry {|f| transeq[f.entry_id]=f.seq}
 # Step 2. convert the transdecoder gff3 into genomic coordinates
   transdecoder=coordfix(transdecoder,cds,transeq)
   transdecoder,trans=converter(transcripts,transdecoder,genome)
+# TRANSDECODER ONLY
+# Step 3. Print gtf, run seqret, load proteins, modify genbank
+  gtfout(transdecoder,TRANSDECODEROUT+".gtf")
+  `cat #{TRANSDECODEROUT}.gtf #{TRANSCRIPTS} | sort -k1,1 -k 4,4n |sed 's/gene_id/ID/'| ruby -ne 'line=$_.chomp.split; line.map!{|x|x.chomp(";").gsub(/"/,"")};puts(line[0..7].join("\t")+"\tlocus_tag="+line[8].split("=")[1].split(";")[0]+"; "+line[8..-1].join("; "))' | sed 's/transcript/gene/' > merged.gtf`
+  `grep 'NC_003030.1' merged.gtf > #{FINALCHROM}`
+  `grep 'NC_001988.2' merged.gtf > #{FINALPLAS}`
+  seqret(CHROMFASTA,FINALCHROM)
+  seqret(PLASFASTA,FINALPLAS)
 
-# Step 3. Print the adjusted gtf and run seqret to generate genbank format
-  gtfout(transdecoder)
-# Step 4. Load the peptide sequences from the genomic coordinates
+  `cat nc_003030.genbank nc_001988.genbank > #{TEMP}`
+  proteins=proteinextract(transdecoder,genome)
+  readnwrite(TEMP,TRANSDECODEROUT+".genbank",transdecoder,proteins)
+# Standard only (for revisions)
+  `cat #{TRANSCRIPTS} #{STANDARDCDS} | sort -k1,1 -k 4,4n | sed 's/gene_id/ID/' | ruby -ne 'line=$_.chomp.split; line.map!{|x|x.chomp(";").gsub(/"/,"")}; out=line[0..7].join("\t")+"\tlocus_tag="; out+=(line[8].include?("=") ? line[8].split("=")[1]+"; "+line[8..-1].join("; ") : line[9]+"; ID="+line[9]); out+=";"; puts(out)' | sed 's/transcript/gene/' > merged.gtf`
+  `grep 'NC_003030.1' merged.gtf > #{FINALCHROM}`
+  `grep 'NC_001988.2' merged.gtf > #{FINALPLAS}`
+  seqret(CHROMFASTA,FINALCHROM)
+  seqret(PLASFASTA,FINALPLAS)
+  `cp #{STANDARDCDS} #{STANDARDOUT}.gtf`
+  `cat nc_003030.genbank nc_001988.genbank > #{TEMP}`
+  #proteins=proteinextract(transdecoder,genome)
+  readnwrite(TEMP,STANDARDOUT+".genbank",transdecoder,proteins)
+# TOTAL
+  `cat #{TRANSDECODEROUT}.gtf #{TRANSCRIPTS} #{STANDARDCDS} | sort -k1,1 -k 4,4n | sed 's/gene_id/ID/' | ruby -ne 'line=$_.chomp.split; line.map!{|x|x.chomp(";").gsub(/"/,"")}; out=line[0..7].join("\t")+"\tlocus_tag="; out+=(line[8].include?("=") ? line[8].split("=")[1]+"; "+line[8..-1].join("; ") : line[9]+"; ID="+line[9]); out+=";"; puts(out)' | sed 's/transcript/gene/' > merged.gtf`
+  `grep 'NC_003030.1' merged.gtf > #{FINALCHROM}`
+  `grep 'NC_001988.2' merged.gtf > #{FINALPLAS}`
+  seqret(CHROMFASTA,FINALCHROM)
+  seqret(PLASFASTA,FINALPLAS)
+  `cat #{TRANSDECODEROUT}.gtf #{STANDARDCDS} > #{MERGEDOUT}.gtf`
+  `cat nc_003030.genbank nc_001988.genbank > #{TEMP}`
+  proteins=proteinextract(transdecoder,genome)
+  readnwrite(TEMP,MERGEDOUT+".genbank",transdecoder,proteins)
 
 
-
-
-# Step 5. Parse genbank and add the CDS sequences
-  #readnwrite(TEMP,OUTFILE,gtf)
 end
 
 #*****************************************************************************#

@@ -46,6 +46,7 @@ STANDARD="#{OUTDIR}/standard.gtf"
 OLD="#{OUTDIR}/standard-cds.gtf"
 OLDGENESLIST="#{OUTDIR}/standard-cds-list.txt"
 STATS="#{OUTDIR}/stats"
+Chrom="NC_003030.1"
 MAXLEN=400
 DIST=40
 
@@ -63,7 +64,7 @@ DIST=40
 def gtfread(infile)
   liszt=[]
   File.open(infile,'r').each {|line| liszt << line.chomp.split}
-  liszt.map! {|x| x[3]=x[3].to_i; x[4]=x[4].to_i; x[9]=x[9].chomp(";").gsub(/"/,''); x}
+  liszt.map! {|x| x[3]=x[3].to_i; x[4]=x[4].to_i; x[9]=x[9].gsub(/"/,''); x}
   liszt.sort! {|x,y| x[3]<=>y[3]}
 end
 
@@ -91,8 +92,11 @@ end
 
 def gtfout(records,output)
   File.open(output,'w') do |file|
-    records.each do |x|
-      file.puts(x.join("\t"))
+    records.select{|x|x[0]!=Chrom}.each do |x|
+      file.puts(x[0..7].join("\t")+"\t"+x[8..-1].join(" "))
+    end
+    records.select{|x|x[0]==Chrom}.each do |x|
+      file.puts(x[0..7].join("\t")+"\t"+x[8..-1].join(" "))
     end
   end
 end
@@ -174,17 +178,18 @@ end
 
 def intrautr(standard,cds,outfile)
   iutr=[]
-  chrom=(cds.select {|x| x[0] == "NC_003030.1"}).sort {|x,y| x[3]<=>y[3]}
-  plas=(cds.select {|x| x[0] == "NC_001988.2"}).sort {|x,y| x[3]<=>y[3]}
+  chrom=(cds.select {|x| x[0] == Chrom}).sort {|x,y| x[3]<=>y[3]}
+  plas=(cds.select {|x| x[0] != Chrom}).sort {|x,y| x[3]<=>y[3]}
   standard.each do |t|
-    if t[0] == "NC_003030.1"
+    if t[0] == Chrom
       tmp=chrom
     else
       tmp=plas
     end
-    i=(0..tmp.size).to_a.bsearch {|x| tmp[x][3] >= t[3]}
+
+    i=(0...tmp.size).to_a.bsearch {|x| tmp[x][3] >= t[3]}
     cdses=[]
-    while tmp[i] && tmp[i][3] >= t[3] && tmp[i][4] <= t[4]
+    while i && tmp[i] && tmp[i][3] >= t[3] && tmp[i][4] <= t[4]
       if tmp[i][6] == t[6]
         cdses << tmp[i]
       end

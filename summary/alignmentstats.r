@@ -4,6 +4,28 @@
 #
 # This R script contains code to generate summary plots for the alignment
 # of Fastq reads to the C_ac genome.
+library('ggplot2')
+library('scales')
+library('cairoDevice')
+library('gridExtra')
+options(max.print=1000)
+options(scipen=999)
+
+
+mydir="/home/mrals/Final"
+setwd(mydir)
+
+
+# Coverage vector plot
+names<-read.table("Terry-excercise/colnames.txt",sep=",")
+m<-seq(1,59,2)
+p<-seq(2,60,2)
+minus<-names[m,1]
+plus<-names[p,1]
+
+cov<-read.table("Terry-excercise/CA_P0151-0176.cov",sep=",")
+p1<-
+
 
 
 
